@@ -8,7 +8,6 @@ Install using standard go get:
 
 ```go
 go get github.com/instruqt/git-exec
-...
 ```
 
 Use in your project:
