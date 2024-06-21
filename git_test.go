@@ -1,6 +1,7 @@
 package git
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -98,4 +99,5 @@ func TestCloneIntoExistingDirectory(t *testing.T) {
 
 	err = g.Clone(sourcePath, sourcePath)
 	require.Error(t, err)
+	require.EqualError(t, err, fmt.Sprintf("fatal: destination path '%s' already exists and is not an empty directory.\n", sourcePath))
 }
