@@ -45,3 +45,8 @@ type DiffHeader struct {
 	DissimilarityIndex *int
 	Index              *string
 }
+
+type Remote struct {
+	Name string
+	URL  string
+}

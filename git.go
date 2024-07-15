@@ -14,6 +14,7 @@ type Git interface {
 	Init(options ...string) (string, error)
 	AddRemote(url string, name string) error
 	RemoveRemote(name string) error
+	ListRemotes() ([]Remote, error)
 	Clone(url string, options ...string) error
 	Status() ([]File, error)
 	Add(files ...string) error
@@ -121,6 +122,43 @@ func (g *GitImpl) RemoveRemote(name string) error {
 		return err
 	}
 	return nil
+}
+
+func (g *GitImpl) ListRemotes() ([]Remote, error) {
+	remotes := []Remote{}
+
+	cmd := exec.Command(g.path, "remote", "-v")
+	if g.wd != "" {
+		cmd.Dir = g.wd
+	}
+
+	output, err := cmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if exitError.Stderr == nil {
+				exitError.Stderr = output
+			}
+
+			return remotes, fmt.Errorf(string(exitError.Stderr))
+		}
+
+		return remotes, err
+	}
+
+	regex := regexp.MustCompile(`(.+)\t(.+)\s\(fetch\)\n(?:.+)\t(?:.+)\s\(push\)`)
+	results := regex.FindAllStringSubmatch(string(output), -1)
+
+	for index := range results {
+		name := results[index][1]
+		url := results[index][2]
+
+		remotes = append(remotes, Remote{
+			Name: name,
+			URL:  url,
+		})
+	}
+
+	return remotes, nil
 }
 
 func (g *GitImpl) Clone(url string, options ...string) error {

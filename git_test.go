@@ -54,6 +54,12 @@ func TestAddRemote(t *testing.T) {
 
 	err = g.AddRemote("origin", "git@github.com:instruqt/git-exec.git")
 	require.NoError(t, err)
+
+	remotes, err := g.ListRemotes()
+	require.NoError(t, err)
+	require.Len(t, remotes, 1)
+	require.Equal(t, "origin", remotes[0].Name)
+	require.Equal(t, "git@github.com:instruqt/git-exec.git", remotes[0].URL)
 }
 
 func TestRemoveRemote(t *testing.T) {
@@ -73,6 +79,33 @@ func TestRemoveRemote(t *testing.T) {
 
 	err = g.RemoveRemote("origin")
 	require.NoError(t, err)
+}
+
+func TestListRemotes(t *testing.T) {
+	path, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+
+	g, err := New()
+	require.NoError(t, err)
+
+	_, err = g.Init(path)
+	require.NoError(t, err)
+
+	g.SetWorkingDirectory(path)
+
+	err = g.AddRemote("first", "first-url")
+	require.NoError(t, err)
+
+	err = g.AddRemote("second", "second-url")
+	require.NoError(t, err)
+
+	remotes, err := g.ListRemotes()
+	require.NoError(t, err)
+	require.Len(t, remotes, 2)
+	require.Equal(t, "first", remotes[0].Name)
+	require.Equal(t, "first-url", remotes[0].URL)
+	require.Equal(t, "second", remotes[1].Name)
+	require.Equal(t, "second-url", remotes[1].URL)
 }
 
 func TestCloneIntoEmptyDirectory(t *testing.T) {
