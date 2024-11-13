@@ -273,3 +273,42 @@ func TestPull(t *testing.T) {
 	_, err = git.Pull()
 	require.NoError(t, err)
 }
+
+func TestPush(t *testing.T) {
+	// create a repository with a commit
+	first, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+
+	git, err := New()
+	require.NoError(t, err)
+
+	git.SetWorkingDirectory(first)
+
+	_, err = git.Init(first, "--bare")
+	require.NoError(t, err)
+
+	// clone the repository to a second directory
+	second, err := filepath.EvalSymlinks(t.TempDir())
+	require.NoError(t, err)
+
+	err = git.Clone(first, second)
+	require.NoError(t, err)
+
+	// add a commit to the second repository
+	git.SetWorkingDirectory(second)
+
+	err = os.WriteFile(filepath.Join(second, "new.txt"), []byte("New\n"), 0644)
+	require.NoError(t, err)
+
+	err = git.Add("new.txt")
+	require.NoError(t, err)
+
+	err = git.Commit("Add new.txt", "John Doe", "john.doe@gmail.com")
+	require.NoError(t, err)
+
+	// push the changes from the second repository to the first repository
+	remotes, err := git.Push()
+	require.NoError(t, err)
+
+	require.NotEmpty(t, remotes)
+}

@@ -76,6 +76,7 @@ type DiffMode struct {
 type Remote struct {
 	Name string
 	URL  string
+	Refs []Ref
 }
 
 type Log struct {
@@ -91,7 +92,6 @@ type Log struct {
 }
 
 type Ref struct {
-	Remote  string
 	Status  RefStatus
 	Summary string
 	From    string

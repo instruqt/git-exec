@@ -26,12 +26,13 @@ type Git interface {
 	Diff() ([]Diff, error)
 	Show(object string) (*Log, error)
 	Log() ([]Log, error)
-	Fetch() ([]Ref, error)
+	Fetch() ([]Remote, error)
 	Pull() (*MergeResult, error)
+	Push() ([]Remote, error)
 	ListBranches() ([]Branch, error)
 
-	Push() error
 	CreateBranch(branch string) error
+	SetUpstream(branch string, remote string) error
 	Checkout() error
 	Tag(name string) error
 	Revert() error
@@ -70,11 +71,11 @@ func (g *git) Init(options ...string) (string, error) {
 
 	cmd.Args = append(cmd.Args, options...)
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return "", errors.New(string(exitError.Stderr))
@@ -83,7 +84,7 @@ func (g *git) Init(options ...string) (string, error) {
 		return "", err
 	}
 
-	return string(output), nil
+	return string(stdout), nil
 }
 
 func (g *git) AddRemote(name string, url string) error {
@@ -92,11 +93,11 @@ func (g *git) AddRemote(name string, url string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -113,11 +114,11 @@ func (g *git) RemoveRemote(name string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -136,11 +137,11 @@ func (g *git) ListRemotes() ([]Remote, error) {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return remotes, errors.New(string(exitError.Stderr))
@@ -150,7 +151,7 @@ func (g *git) ListRemotes() ([]Remote, error) {
 	}
 
 	regex := regexp.MustCompile(`(.+)\t(.+)\s\(fetch\)\n(?:.+)\t(?:.+)\s\(push\)`)
-	results := regex.FindAllStringSubmatch(string(output), -1)
+	results := regex.FindAllStringSubmatch(string(stdout), -1)
 
 	for index := range results {
 		name := results[index][1]
@@ -173,11 +174,11 @@ func (g *git) Clone(url string, options ...string) error {
 
 	cmd.Args = append(cmd.Args, options...)
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -197,11 +198,11 @@ func (g *git) Status() ([]File, error) {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 			return files, errors.New(string(exitError.Stderr))
 		}
@@ -209,7 +210,7 @@ func (g *git) Status() ([]File, error) {
 		return files, err
 	}
 
-	lines := strings.Split(string(output), "\n")
+	lines := strings.Split(string(stdout), "\n")
 	for _, file := range lines {
 		if file == "" {
 			continue
@@ -275,11 +276,11 @@ func (g *git) Commit(message string, author string, email string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -297,18 +298,18 @@ func (g *git) Diff() ([]Diff, error) {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 			return nil, errors.New(string(exitError.Stderr))
 		}
 		return nil, err
 	}
 
-	diffs, err := parseDiffs(string(output))
+	diffs, err := parseDiffs(string(stdout))
 	if err != nil {
 		return nil, err
 	}
@@ -322,11 +323,11 @@ func (g *git) Show(object string) (*Log, error) {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return nil, errors.New(string(exitError.Stderr))
@@ -336,7 +337,7 @@ func (g *git) Show(object string) (*Log, error) {
 	}
 
 	detailsRegex := regexp.MustCompile(`(?s)commit (?P<commit>.+)\nAuthor:\s+(?P<author>.+)\nAuthorDate:\s+(?P<author_date>.+)\nCommit:\s+(?P<committer>.+)\nCommitDate:\s+(?P<committer_date>.+)\n\n\s+(?P<message>.*)\n\n(?P<diff>.*)`)
-	matches := detailsRegex.FindAllStringSubmatch(string(output), -1)
+	matches := detailsRegex.FindAllStringSubmatch(string(stdout), -1)
 
 	details := make(map[string]string)
 	for i, name := range detailsRegex.SubexpNames() {
@@ -379,11 +380,11 @@ func (g *git) Log() ([]Log, error) {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return nil, errors.New(string(exitError.Stderr))
@@ -393,7 +394,7 @@ func (g *git) Log() ([]Log, error) {
 	}
 
 	detailsRegex := regexp.MustCompile(`commit (?P<commit>.+)\nAuthor:\s+(?P<author>.+)\nAuthorDate:\s+(?P<author_date>.+)\nCommit:\s+(?P<committer>.+)\nCommitDate:\s+(?P<committer_date>.+)\n\n\s+(?P<message>.*)(?:\n\n)?`)
-	matches := detailsRegex.FindAllStringSubmatch(string(output), -1)
+	matches := detailsRegex.FindAllStringSubmatch(string(stdout), -1)
 
 	logs := []Log{}
 	for _, match := range matches {
@@ -430,7 +431,7 @@ func (g *git) Log() ([]Log, error) {
 }
 
 // TODO: implement
-func (g *git) Fetch() ([]Ref, error) {
+func (g *git) Fetch() ([]Remote, error) {
 	cmd := exec.Command(g.path, "fetch", "-v") //, "--refetch")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -454,66 +455,37 @@ func (g *git) Fetch() ([]Ref, error) {
 	}
 
 	// fetch writes its output on stderr
-	output := stderr.Bytes()
+	output := stderr.String()
 
 	remotesRegex := regexp.MustCompile(`From (?P<remote>.+)\n`)
-	remotes := remotesRegex.Split(string(output), -1)
-	remoteMatches := remotesRegex.FindAllStringSubmatch(string(output), -1)
+	remoteList := remotesRegex.Split(output, -1)
+	remoteMatches := remotesRegex.FindAllStringSubmatch(output, -1)
 
-	refs := []Ref{}
+	remotes := []Remote{}
 
 	remoteIndex := 0
-	for _, remote := range remotes {
-		if remote == "" {
+	for _, remoteItem := range remoteList {
+		if remoteItem == "" {
 			continue
 		}
 
-		remoteName := remoteMatches[remoteIndex][1]
-
-		// TODO: handle reason in case of a rejected ref
-		refRegex := regexp.MustCompile(`\s+(?P<status>.{1})\s+(?P<summary>\[up to date\]|\[new branch\]|\[new tag]|\S+)\s+\s(?P<from>\S+)\s+->\s+(?P<to>\S+)\n`)
-		refMatches := refRegex.FindAllStringSubmatch(remote, -1)
-
-		for _, refMatch := range refMatches {
-			ref := make(map[string]string)
-			for i, name := range refRegex.SubexpNames() {
-				if i != 0 && name != "" {
-					ref[name] = refMatch[i]
-				}
-			}
-
-			status := RefStatusUnspecified
-			switch ref["status"] {
-			case " ":
-				status = RefStatusFastForward
-			case "+":
-				status = RefStatusForcedUpdate
-			case "*":
-				status = RefStatusNew
-			case "-":
-				status = RefStatusPruned
-			case "!":
-				status = RefStatusRejected
-			case "=":
-				status = RefStatusUpToDate
-			case "t":
-				status = RefStatusTagUpdate
-			}
-
-			refs = append(refs, Ref{
-				Remote:  remoteName,
-				Status:  status,
-				Summary: ref["summary"],
-				From:    ref["from"],
-				To:      ref["to"],
-				Reason:  nil,
-			})
+		remote := Remote{
+			Name: remoteMatches[remoteIndex][1],
+			Refs: []Ref{},
 		}
 
+		refs, err := parseRefs(remoteItem)
+		if err != nil {
+			return nil, err
+		}
+
+		remote.Refs = refs
+
+		remotes = append(remotes, remote)
 		remoteIndex++
 	}
 
-	return refs, nil
+	return remotes, nil
 }
 
 func (g *git) Pull() (*MergeResult, error) {
@@ -522,11 +494,11 @@ func (g *git) Pull() (*MergeResult, error) {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return nil, errors.New(string(exitError.Stderr))
@@ -536,7 +508,7 @@ func (g *git) Pull() (*MergeResult, error) {
 	}
 
 	pullRegex := regexp.MustCompile(`Updating\s(?P<start_commit>\w+)..(?P<end_commit>\w+)\n(?P<method>\S+)\n(?P<files>(?:\s.+\|\s+\d+\s[\+\-]+\n)*)\s(?P<changes>\d+) file(?:s)? changed(?:, (?P<insertions>\d+) insertion(?:s)?\(\+\))?(?:, (?P<deletions>\d+) deletion(?:s)?\(\-\))?\n(?P<modes>(?:\s(?:create|delete) mode \d+ \S+\n?)*)?`)
-	pullMatches := pullRegex.FindAllStringSubmatch(string(output), -1)
+	pullMatches := pullRegex.FindAllStringSubmatch(string(stdout), -1)
 
 	result := &MergeResult{
 		DiffStats: []DiffStat{},
@@ -572,25 +544,61 @@ func (g *git) Pull() (*MergeResult, error) {
 }
 
 // TODO: implement
-func (g *git) Push() error {
+func (g *git) Push() ([]Remote, error) {
 	cmd := exec.Command(g.path, "push")
 	if g.wd != "" {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stderr.Bytes()
 			}
 
-			return errors.New(string(exitError.Stderr))
+			return nil, errors.New(string(exitError.Stderr))
 		}
 
-		return err
+		return nil, err
 	}
-	return nil
+
+	output := stderr.String()
+
+	remotesRegex := regexp.MustCompile(`To (?P<remote>.+)\n`)
+	remoteList := remotesRegex.Split(output, -1)
+	remoteMatches := remotesRegex.FindAllStringSubmatch(output, -1)
+
+	remotes := []Remote{}
+
+	remoteIndex := 0
+	for _, remoteItem := range remoteList {
+		if remoteItem == "" {
+			continue
+		}
+
+		remote := Remote{
+			Name: remoteMatches[remoteIndex][1],
+			Refs: []Ref{},
+		}
+
+		refs, err := parseRefs(remoteItem)
+		if err != nil {
+			return nil, err
+		}
+
+		remote.Refs = refs
+
+		remotes = append(remotes, remote)
+		remoteIndex++
+	}
+
+	return remotes, nil
 }
 
 func (g *git) ListBranches() ([]Branch, error) {
@@ -601,18 +609,18 @@ func (g *git) ListBranches() ([]Branch, error) {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 			return branches, errors.New(string(exitError.Stderr))
 		}
 		return branches, err
 	}
 
-	lines := strings.Split(string(output), "\n")
+	lines := strings.Split(string(stdout), "\n")
 	for _, branch := range lines {
 		if branch == "" {
 			continue
@@ -634,13 +642,33 @@ func (g *git) CreateBranch(branch string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
+			return errors.New(string(exitError.Stderr))
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (g *git) SetUpstream(branch string, remote string) error {
+	cmd := exec.Command(g.path, "branch", branch, "-u", remote+"/"+branch)
+	if g.wd != "" {
+		cmd.Dir = g.wd
+	}
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if exitError.Stderr == nil {
+				exitError.Stderr = stdout
+			}
 			return errors.New(string(exitError.Stderr))
 		}
 		return err
@@ -656,11 +684,11 @@ func (g *git) CheckoutFile(file string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -678,11 +706,11 @@ func (g *git) Checkout() error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -699,11 +727,11 @@ func (g *git) Tag(name string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -721,11 +749,11 @@ func (g *git) Revert() error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -743,11 +771,11 @@ func (g *git) Merge() error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -765,11 +793,11 @@ func (g *git) Rebase() error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -792,11 +820,11 @@ func (g *git) Add(files ...string) error {
 		cmd.Args = append(cmd.Args, ".")
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -818,11 +846,11 @@ func (g *git) Reset(files ...string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -840,11 +868,11 @@ func (g *git) Reflog() error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -862,11 +890,11 @@ func (g *git) Config(key string, value string) error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -884,11 +912,11 @@ func (g *git) Remove() error {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	stdout, err := cmd.Output()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stdout
 			}
 
 			return errors.New(string(exitError.Stderr))
@@ -1099,4 +1127,47 @@ func parseDiffModes(input string) (DiffMode, error) {
 	}
 
 	return dm, nil
+}
+
+func parseRefs(input string) ([]Ref, error) {
+	refs := []Ref{}
+	refRegex := regexp.MustCompile(`\s+(?P<status>.{1})\s+(?P<summary>\[up to date\]|\[new branch\]|\[new tag]|\S+)\s+\s(?P<from>\S+)\s+->\s+(?P<to>\S+)\n`)
+	refMatches := refRegex.FindAllStringSubmatch(input, -1)
+
+	for _, refMatch := range refMatches {
+		ref := make(map[string]string)
+		for i, name := range refRegex.SubexpNames() {
+			if i != 0 && name != "" {
+				ref[name] = refMatch[i]
+			}
+		}
+
+		status := RefStatusUnspecified
+		switch ref["status"] {
+		case " ":
+			status = RefStatusFastForward
+		case "+":
+			status = RefStatusForcedUpdate
+		case "*":
+			status = RefStatusNew
+		case "-":
+			status = RefStatusPruned
+		case "!":
+			status = RefStatusRejected
+		case "=":
+			status = RefStatusUpToDate
+		case "t":
+			status = RefStatusTagUpdate
+		}
+
+		refs = append(refs, Ref{
+			Status:  status,
+			Summary: ref["summary"],
+			From:    ref["from"],
+			To:      ref["to"],
+			Reason:  nil,
+		})
+	}
+
+	return refs, nil
 }
