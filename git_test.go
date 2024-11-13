@@ -12,10 +12,10 @@ func TestInitRepositoryInEmptyDirectory(t *testing.T) {
 	path, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 
-	g, err := New()
+	git, err := New()
 	require.NoError(t, err)
 
-	output, err := g.Init(path)
+	output, err := git.Init(path)
 	require.NoError(t, err)
 	require.Equal(t, "Initialized empty Git repository in "+path+"/.git/\n", output)
 	require.DirExists(t, filepath.Join(path, ".git"))
@@ -25,15 +25,15 @@ func TestInitRepositoryInExistingRepository(t *testing.T) {
 	path, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 
-	g, err := New()
+	git, err := New()
 	require.NoError(t, err)
 
-	output, err := g.Init(path)
+	output, err := git.Init(path)
 	require.NoError(t, err)
 	require.Equal(t, "Initialized empty Git repository in "+path+"/.git/\n", output)
 	require.DirExists(t, filepath.Join(path, ".git"))
 
-	output, err = g.Init(path)
+	output, err = git.Init(path)
 	require.NoError(t, err)
 	require.Equal(t, "Reinitialized existing Git repository in "+path+"/.git/\n", output)
 	require.DirExists(t, filepath.Join(path, ".git"))
@@ -44,18 +44,18 @@ func TestAddRemote(t *testing.T) {
 	path, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 
-	g, err := New()
+	git, err := New()
 	require.NoError(t, err)
 
-	_, err = g.Init(path)
+	_, err = git.Init(path)
 	require.NoError(t, err)
 
-	g.SetWorkingDirectory(path)
+	git.SetWorkingDirectory(path)
 
-	err = g.AddRemote("origin", "git@github.com:instruqt/git-exec.git")
+	err = git.AddRemote("origin", "git@github.com:instruqt/git-exec.git")
 	require.NoError(t, err)
 
-	remotes, err := g.ListRemotes()
+	remotes, err := git.ListRemotes()
 	require.NoError(t, err)
 	require.Len(t, remotes, 1)
 	require.Equal(t, "origin", remotes[0].Name)
@@ -66,18 +66,18 @@ func TestRemoveRemote(t *testing.T) {
 	path, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 
-	g, err := New()
+	git, err := New()
 	require.NoError(t, err)
 
-	_, err = g.Init(path)
+	_, err = git.Init(path)
 	require.NoError(t, err)
 
-	g.SetWorkingDirectory(path)
+	git.SetWorkingDirectory(path)
 
-	err = g.AddRemote("origin", "git@github.com:instruqt/git-exec.git")
+	err = git.AddRemote("origin", "git@github.com:instruqt/git-exec.git")
 	require.NoError(t, err)
 
-	err = g.RemoveRemote("origin")
+	err = git.RemoveRemote("origin")
 	require.NoError(t, err)
 }
 
@@ -85,21 +85,21 @@ func TestListRemotes(t *testing.T) {
 	path, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 
-	g, err := New()
+	git, err := New()
 	require.NoError(t, err)
 
-	_, err = g.Init(path)
+	_, err = git.Init(path)
 	require.NoError(t, err)
 
-	g.SetWorkingDirectory(path)
+	git.SetWorkingDirectory(path)
 
-	err = g.AddRemote("first", "first-url")
+	err = git.AddRemote("first", "first-url")
 	require.NoError(t, err)
 
-	err = g.AddRemote("second", "second-url")
+	err = git.AddRemote("second", "second-url")
 	require.NoError(t, err)
 
-	remotes, err := g.ListRemotes()
+	remotes, err := git.ListRemotes()
 	require.NoError(t, err)
 	require.Len(t, remotes, 2)
 	require.Equal(t, "first", remotes[0].Name)
@@ -109,28 +109,28 @@ func TestListRemotes(t *testing.T) {
 }
 
 func TestCloneIntoEmptyDirectory(t *testing.T) {
-	g, err := New()
+	git, err := New()
 	require.NoError(t, err)
 
 	sourcePath := t.TempDir()
-	_, err = g.Init(sourcePath, "--bare")
+	_, err = git.Init(sourcePath, "--bare")
 	require.NoError(t, err)
 
 	destinationPath := t.TempDir()
-	err = g.Clone(sourcePath, destinationPath)
+	err = git.Clone(sourcePath, destinationPath)
 	require.NoError(t, err)
 	require.DirExists(t, filepath.Join(destinationPath, ".git"))
 }
 
 func TestCloneIntoExistingDirectory(t *testing.T) {
-	g, err := New()
+	git, err := New()
 	require.NoError(t, err)
 
 	sourcePath := t.TempDir()
-	_, err = g.Init(sourcePath, "--bare")
+	_, err = git.Init(sourcePath, "--bare")
 	require.NoError(t, err)
 
-	err = g.Clone(sourcePath, sourcePath)
+	err = git.Clone(sourcePath, sourcePath)
 	require.Error(t, err)
 	require.EqualError(t, err, fmt.Sprintf("fatal: destination path '%s' already exists and is not an empty directory.\n", sourcePath))
 }

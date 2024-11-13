@@ -1,6 +1,7 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
@@ -34,11 +35,11 @@ type Git interface {
 	Merge() error
 	Rebase() error
 	Reflog() error
-	Config() error
+	Config(key string, value string) error
 	Remove() error
 }
 
-type GitImpl struct {
+type git struct {
 	path string
 	wd   string
 }
@@ -49,16 +50,16 @@ func New() (Git, error) {
 		return nil, err
 	}
 
-	return &GitImpl{
+	return &git{
 		path: path,
 	}, nil
 }
 
-func (g *GitImpl) SetWorkingDirectory(wd string) {
+func (g *git) SetWorkingDirectory(wd string) {
 	g.wd = wd
 }
 
-func (g *GitImpl) Init(options ...string) (string, error) {
+func (g *git) Init(options ...string) (string, error) {
 	cmd := exec.Command(g.path, "init")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -73,7 +74,7 @@ func (g *GitImpl) Init(options ...string) (string, error) {
 				exitError.Stderr = output
 			}
 
-			return "", fmt.Errorf(string(exitError.Stderr))
+			return "", errors.New(string(exitError.Stderr))
 		}
 
 		return "", err
@@ -82,7 +83,7 @@ func (g *GitImpl) Init(options ...string) (string, error) {
 	return string(output), nil
 }
 
-func (g *GitImpl) AddRemote(name string, url string) error {
+func (g *git) AddRemote(name string, url string) error {
 	cmd := exec.Command(g.path, "remote", "add", name, url)
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -95,7 +96,7 @@ func (g *GitImpl) AddRemote(name string, url string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -103,7 +104,7 @@ func (g *GitImpl) AddRemote(name string, url string) error {
 	return nil
 }
 
-func (g *GitImpl) RemoveRemote(name string) error {
+func (g *git) RemoveRemote(name string) error {
 	cmd := exec.Command(g.path, "remote", "rm", name)
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -116,7 +117,7 @@ func (g *GitImpl) RemoveRemote(name string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -124,7 +125,7 @@ func (g *GitImpl) RemoveRemote(name string) error {
 	return nil
 }
 
-func (g *GitImpl) ListRemotes() ([]Remote, error) {
+func (g *git) ListRemotes() ([]Remote, error) {
 	remotes := []Remote{}
 
 	cmd := exec.Command(g.path, "remote", "-v")
@@ -139,7 +140,7 @@ func (g *GitImpl) ListRemotes() ([]Remote, error) {
 				exitError.Stderr = output
 			}
 
-			return remotes, fmt.Errorf(string(exitError.Stderr))
+			return remotes, errors.New(string(exitError.Stderr))
 		}
 
 		return remotes, err
@@ -161,7 +162,7 @@ func (g *GitImpl) ListRemotes() ([]Remote, error) {
 	return remotes, nil
 }
 
-func (g *GitImpl) Clone(url string, options ...string) error {
+func (g *git) Clone(url string, options ...string) error {
 	cmd := exec.Command(g.path, "clone", "-q", url)
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -176,7 +177,7 @@ func (g *GitImpl) Clone(url string, options ...string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -185,7 +186,7 @@ func (g *GitImpl) Clone(url string, options ...string) error {
 	return nil
 }
 
-func (g *GitImpl) Status() ([]File, error) {
+func (g *git) Status() ([]File, error) {
 	files := []File{}
 
 	cmd := exec.Command(g.path, "status", "--porcelain")
@@ -199,7 +200,7 @@ func (g *GitImpl) Status() ([]File, error) {
 			if exitError.Stderr == nil {
 				exitError.Stderr = output
 			}
-			return files, fmt.Errorf(string(exitError.Stderr))
+			return files, errors.New(string(exitError.Stderr))
 		}
 
 		return files, err
@@ -214,52 +215,52 @@ func (g *GitImpl) Status() ([]File, error) {
 		switch file[:2] {
 		case "??":
 			files = append(files, File{
-				Status: FileUntracked,
+				Status: FileStatusUntracked,
 				Name:   file[3:],
 			})
 		case "A ":
 			files = append(files, File{
-				Status: FileAdded,
+				Status: FileStatusAdded,
 				Name:   file[3:],
 			})
 		case "M ":
 			files = append(files, File{
-				Status: FileModified,
+				Status: FileStatusModified,
 				Name:   file[3:],
 			})
 		case "D ":
 			files = append(files, File{
-				Status: FileDeleted,
+				Status: FileStatusDeleted,
 				Name:   file[3:],
 			})
 		case "R ":
 			parts := strings.Split(file[3:], " -> ")
 			files = append(files, File{
-				Status:      FileRenamed,
+				Status:      FileStatusRenamed,
 				Name:        parts[0],
 				Destination: parts[1],
 			})
 		case "C ":
 			parts := strings.Split(file[3:], " -> ")
 			files = append(files, File{
-				Status:      FileCopied,
+				Status:      FileStatusCopied,
 				Name:        parts[0],
 				Destination: parts[1],
 			})
 		case "U ":
 			files = append(files, File{
-				Status: FileUpdated,
+				Status: FileStatusUpdated,
 				Name:   file[3:],
 			})
 		}
 
-		// TODO add more cases
+		// TODO: add more cases
 	}
 
 	return files, nil
 }
 
-func (g *GitImpl) Commit(message string, author string, email string) error {
+func (g *git) Commit(message string, author string, email string) error {
 	cmd := exec.Command(g.path, "commit", "-q", "-m", message, fmt.Sprintf(`--author="%s <%s>"`, author, email))
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -272,7 +273,7 @@ func (g *GitImpl) Commit(message string, author string, email string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -281,7 +282,7 @@ func (g *GitImpl) Commit(message string, author string, email string) error {
 	return nil
 }
 
-func (g *GitImpl) Diff() ([]Diff, error) {
+func (g *git) Diff() ([]Diff, error) {
 	diffs := []Diff{}
 	cmd := exec.Command(g.path, "diff", "-U1000000", "--histogram")
 	if g.wd != "" {
@@ -294,7 +295,7 @@ func (g *GitImpl) Diff() ([]Diff, error) {
 			if exitError.Stderr == nil {
 				exitError.Stderr = output
 			}
-			return diffs, fmt.Errorf(string(exitError.Stderr))
+			return diffs, errors.New(string(exitError.Stderr))
 		}
 		return diffs, err
 	}
@@ -315,11 +316,11 @@ func (g *GitImpl) Diff() ([]Diff, error) {
 		parts := contentsRegex.FindAllStringSubmatch(file, -1)
 
 		if len(parts) == 0 {
-			return diffs, fmt.Errorf("could not find diff")
+			return diffs, errors.New("could not find diff")
 		}
 
 		if len(parts) > 1 {
-			return diffs, fmt.Errorf("found more than one diff")
+			return diffs, errors.New("found more than one diff")
 		}
 
 		header := parts[0][1]
@@ -344,7 +345,8 @@ func (g *GitImpl) Diff() ([]Diff, error) {
 	return diffs, nil
 }
 
-func (g *GitImpl) Show() error {
+// TODO: implement
+func (g *git) Show() error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -357,7 +359,7 @@ func (g *GitImpl) Show() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -365,7 +367,8 @@ func (g *GitImpl) Show() error {
 	return nil
 }
 
-func (g *GitImpl) Log() error {
+// TODO: implement
+func (g *git) Log() error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -378,7 +381,7 @@ func (g *GitImpl) Log() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -386,7 +389,8 @@ func (g *GitImpl) Log() error {
 	return nil
 }
 
-func (g *GitImpl) Fetch() error {
+// TODO: implement
+func (g *git) Fetch() error {
 	cmd := exec.Command(g.path, "fetch")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -399,7 +403,7 @@ func (g *GitImpl) Fetch() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -407,7 +411,8 @@ func (g *GitImpl) Fetch() error {
 	return nil
 }
 
-func (g *GitImpl) Pull() error {
+// TODO: implement
+func (g *git) Pull() error {
 	cmd := exec.Command(g.path, "pull")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -420,7 +425,7 @@ func (g *GitImpl) Pull() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -428,7 +433,8 @@ func (g *GitImpl) Pull() error {
 	return nil
 }
 
-func (g *GitImpl) Push() error {
+// TODO: implement
+func (g *git) Push() error {
 	cmd := exec.Command(g.path, "push")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -441,7 +447,7 @@ func (g *GitImpl) Push() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -449,7 +455,7 @@ func (g *GitImpl) Push() error {
 	return nil
 }
 
-func (g *GitImpl) ListBranches() ([]Branch, error) {
+func (g *git) ListBranches() ([]Branch, error) {
 	branches := []Branch{}
 
 	cmd := exec.Command(g.path, "branch")
@@ -463,7 +469,7 @@ func (g *GitImpl) ListBranches() ([]Branch, error) {
 			if exitError.Stderr == nil {
 				exitError.Stderr = output
 			}
-			return branches, fmt.Errorf(string(exitError.Stderr))
+			return branches, errors.New(string(exitError.Stderr))
 		}
 		return branches, err
 	}
@@ -484,7 +490,8 @@ func (g *GitImpl) ListBranches() ([]Branch, error) {
 	return branches, nil
 }
 
-func (g *GitImpl) CreateBranch(branch string) error {
+// TODO: implement
+func (g *git) CreateBranch(branch string) error {
 	cmd := exec.Command(g.path, "branch", branch)
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -497,7 +504,7 @@ func (g *GitImpl) CreateBranch(branch string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 		return err
 	}
@@ -505,7 +512,8 @@ func (g *GitImpl) CreateBranch(branch string) error {
 	return nil
 }
 
-func (g *GitImpl) CheckoutFile(file string) error {
+// TODO: implement
+func (g *git) CheckoutFile(file string) error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -518,7 +526,7 @@ func (g *GitImpl) CheckoutFile(file string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -526,7 +534,8 @@ func (g *GitImpl) CheckoutFile(file string) error {
 	return nil
 }
 
-func (g *GitImpl) Checkout() error {
+// TODO: implement
+func (g *git) Checkout() error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -539,7 +548,7 @@ func (g *GitImpl) Checkout() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -547,7 +556,8 @@ func (g *GitImpl) Checkout() error {
 	return nil
 }
 
-func (g *GitImpl) Tag(name string) error {
+// TODO: implement
+func (g *git) Tag(name string) error {
 	cmd := exec.Command(g.path, "tag", name)
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -560,7 +570,7 @@ func (g *GitImpl) Tag(name string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -568,7 +578,8 @@ func (g *GitImpl) Tag(name string) error {
 	return nil
 }
 
-func (g *GitImpl) Revert() error {
+// TODO: implement
+func (g *git) Revert() error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -581,7 +592,7 @@ func (g *GitImpl) Revert() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -589,7 +600,8 @@ func (g *GitImpl) Revert() error {
 	return nil
 }
 
-func (g *GitImpl) Merge() error {
+// TODO: implement
+func (g *git) Merge() error {
 	cmd := exec.Command(g.path, "merge")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -602,7 +614,7 @@ func (g *GitImpl) Merge() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -610,7 +622,8 @@ func (g *GitImpl) Merge() error {
 	return nil
 }
 
-func (g *GitImpl) Rebase() error {
+// TODO: implement
+func (g *git) Rebase() error {
 	cmd := exec.Command(g.path, "rebase")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -623,7 +636,7 @@ func (g *GitImpl) Rebase() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -631,7 +644,7 @@ func (g *GitImpl) Rebase() error {
 	return nil
 }
 
-func (g *GitImpl) Add(files ...string) error {
+func (g *git) Add(files ...string) error {
 	cmd := exec.Command(g.path, "add")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -650,7 +663,7 @@ func (g *GitImpl) Add(files ...string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 		return err
 	}
@@ -658,7 +671,7 @@ func (g *GitImpl) Add(files ...string) error {
 	return nil
 }
 
-func (g *GitImpl) Reset(files ...string) error {
+func (g *git) Reset(files ...string) error {
 	cmd := exec.Command(g.path, "reset")
 
 	if len(files) > 0 {
@@ -676,7 +689,7 @@ func (g *GitImpl) Reset(files ...string) error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 		return err
 	}
@@ -684,7 +697,8 @@ func (g *GitImpl) Reset(files ...string) error {
 	return nil
 }
 
-func (g *GitImpl) Reflog() error {
+// TODO: implement
+func (g *git) Reflog() error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -697,7 +711,7 @@ func (g *GitImpl) Reflog() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -705,7 +719,8 @@ func (g *GitImpl) Reflog() error {
 	return nil
 }
 
-func (g *GitImpl) Config() error {
+// TODO: implement
+func (g *git) Config(key string, value string) error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -718,7 +733,7 @@ func (g *GitImpl) Config() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err
@@ -726,7 +741,8 @@ func (g *GitImpl) Config() error {
 	return nil
 }
 
-func (g *GitImpl) Remove() error {
+// TODO: implement
+func (g *git) Remove() error {
 	cmd := exec.Command(g.path, "x")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -739,7 +755,7 @@ func (g *GitImpl) Remove() error {
 				exitError.Stderr = output
 			}
 
-			return fmt.Errorf(string(exitError.Stderr))
+			return errors.New(string(exitError.Stderr))
 		}
 
 		return err

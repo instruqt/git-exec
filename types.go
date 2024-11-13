@@ -3,14 +3,14 @@ package git
 type FileStatus string
 
 const (
-	FileUntracked  FileStatus = "untracked"
-	FileUnmodified FileStatus = "unmodified"
-	FileModified   FileStatus = "modified"
-	FileAdded      FileStatus = "added"
-	FileDeleted    FileStatus = "deleted"
-	FileRenamed    FileStatus = "renamed"
-	FileCopied     FileStatus = "copied"
-	FileUpdated    FileStatus = "updated"
+	FileStatusUntracked  FileStatus = "untracked"
+	FileStatusUnmodified FileStatus = "unmodified"
+	FileStatusModified   FileStatus = "modified"
+	FileStatusAdded      FileStatus = "added"
+	FileStatusDeleted    FileStatus = "deleted"
+	FileStatusRenamed    FileStatus = "renamed"
+	FileStatusCopied     FileStatus = "copied"
+	FileStatusUpdated    FileStatus = "updated"
 )
 
 type File struct {
