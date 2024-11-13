@@ -27,10 +27,10 @@ type Git interface {
 	Show(object string) (*Log, error)
 	Log() ([]Log, error)
 	Fetch() ([]Ref, error)
-
-	Pull() error
-	Push() error
+	Pull() (*MergeResult, error)
 	ListBranches() ([]Branch, error)
+
+	Push() error
 	CreateBranch(branch string) error
 	Checkout() error
 	Tag(name string) error
@@ -431,7 +431,7 @@ func (g *git) Log() ([]Log, error) {
 
 // TODO: implement
 func (g *git) Fetch() ([]Ref, error) {
-	cmd := exec.Command(g.path, "fetch", "-v", "--refetch")
+	cmd := exec.Command(g.path, "fetch", "-v") //, "--refetch")
 	if g.wd != "" {
 		cmd.Dir = g.wd
 	}
@@ -516,7 +516,7 @@ func (g *git) Fetch() ([]Ref, error) {
 	return refs, nil
 }
 
-func (g *git) Pull() error {
+func (g *git) Pull() (*MergeResult, error) {
 	cmd := exec.Command(g.path, "pull")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -529,14 +529,19 @@ func (g *git) Pull() error {
 				exitError.Stderr = output
 			}
 
-			return errors.New(string(exitError.Stderr))
+			return nil, errors.New(string(exitError.Stderr))
 		}
 
-		return err
+		return nil, err
 	}
 
-	pullRegex := regexp.MustCompile(`Updating\s(?P<commits>\S+)\nFast-forward\n(?P<files>(?:\s.+\|\s+\d+\s[\+\-]+\n)*)\s(?P<changes>\d+) file(?:s)? changed(?:, (?P<insertions>\d+) insertion(?:s)?\(\+\))?(?:, (?P<deletions>\d+) deletion(?:s)?\(\-\))?\n(?P<modes>(?:\s(?:create|delete) mode \d+ \S+\n?)*)?`)
+	pullRegex := regexp.MustCompile(`Updating\s(?P<start_commit>\w+)..(?P<end_commit>\w+)\n(?P<method>\S+)\n(?P<files>(?:\s.+\|\s+\d+\s[\+\-]+\n)*)\s(?P<changes>\d+) file(?:s)? changed(?:, (?P<insertions>\d+) insertion(?:s)?\(\+\))?(?:, (?P<deletions>\d+) deletion(?:s)?\(\-\))?\n(?P<modes>(?:\s(?:create|delete) mode \d+ \S+\n?)*)?`)
 	pullMatches := pullRegex.FindAllStringSubmatch(string(output), -1)
+
+	result := &MergeResult{
+		DiffStats: []DiffStat{},
+		DiffModes: []DiffMode{},
+	}
 
 	for _, pullMatch := range pullMatches {
 		pull := make(map[string]string)
@@ -546,38 +551,24 @@ func (g *git) Pull() error {
 			}
 		}
 
-		filesRegex := regexp.MustCompile(`\s(?P<file>.+)\|\s+(?P<changes>\d+)\s(?P<insertions>\+*)?(?P<deletions>-*)?\n`)
-		filesMatches := filesRegex.FindAllStringSubmatch(pull["files"], -1)
+		result.StartCommit = pull["start_commit"]
+		result.EndCommit = pull["end_commit"]
+		result.Method = pull["method"]
 
-		for _, filesMatch := range filesMatches {
-			files := make(map[string]string)
-			for i, name := range filesRegex.SubexpNames() {
-				if i != 0 && name != "" {
-					files[name] = filesMatch[i]
-				}
-			}
-
-			fileName := strings.Trim(files["file"], " ")
-			changes, err := strconv.Atoi(files["changes"])
-			if err != nil {
-				return err
-			}
-
-			insertions := len(files["insertions"])
-			deletions := len(files["deletions"])
-
-			diffStat := DiffStat{
-				File:       fileName,
-				Changes:    changes,
-				Insertions: insertions,
-				Deletions:  deletions,
-			}
-
-			fmt.Println(diffStat)
+		diffStat, err := parseDiffStats(pull["files"])
+		if err != nil {
+			return nil, err
 		}
+		result.DiffStats = append(result.DiffStats, diffStat)
+
+		diffMode, err := parseDiffModes(pull["modes"])
+		if err != nil {
+			return nil, err
+		}
+		result.DiffModes = append(result.DiffModes, diffMode)
 	}
 
-	return nil
+	return result, nil
 }
 
 // TODO: implement
@@ -637,7 +628,6 @@ func (g *git) ListBranches() ([]Branch, error) {
 	return branches, nil
 }
 
-// TODO: implement
 func (g *git) CreateBranch(branch string) error {
 	cmd := exec.Command(g.path, "branch", branch)
 	if g.wd != "" {
@@ -703,7 +693,6 @@ func (g *git) Checkout() error {
 	return nil
 }
 
-// TODO: implement
 func (g *git) Tag(name string) error {
 	cmd := exec.Command(g.path, "tag", name)
 	if g.wd != "" {
@@ -1055,4 +1044,59 @@ func parseDiffs(input string) ([]Diff, error) {
 	}
 
 	return diffs, nil
+}
+
+func parseDiffStats(input string) (DiffStat, error) {
+	ds := DiffStat{}
+
+	filesRegex := regexp.MustCompile(`\s(?P<file>.+)\|\s+(?P<changes>\d+)\s(?P<insertions>\+*)?(?P<deletions>-*)?\n`)
+	filesMatches := filesRegex.FindAllStringSubmatch(input, -1)
+
+	for _, filesMatch := range filesMatches {
+		files := make(map[string]string)
+		for i, name := range filesRegex.SubexpNames() {
+			if i != 0 && name != "" {
+				files[name] = filesMatch[i]
+			}
+		}
+
+		ds.File = strings.Trim(files["file"], " ")
+		changes, err := strconv.Atoi(files["changes"])
+		if err != nil {
+			return ds, err
+		}
+
+		ds.Changes = changes
+		ds.Insertions = len(files["insertions"])
+		ds.Deletions = len(files["deletions"])
+	}
+
+	return ds, nil
+}
+
+func parseDiffModes(input string) (DiffMode, error) {
+	dm := DiffMode{}
+
+	modesRegex := regexp.MustCompile(`\s(?P<action>create|delete)\s+mode\s(?P<mode>\d+)\s(?P<file>\S+)\n`)
+	modesMatches := modesRegex.FindAllStringSubmatch(input, -1)
+
+	for _, modesMatch := range modesMatches {
+		modes := make(map[string]string)
+		for i, name := range modesRegex.SubexpNames() {
+			if i != 0 && name != "" {
+				modes[name] = modesMatch[i]
+			}
+		}
+
+		mode, err := strconv.Atoi(modes["mode"])
+		if err != nil {
+			return dm, err
+		}
+
+		dm.Action = modes["action"]
+		dm.Mode = mode
+		dm.File = modes["file"]
+	}
+
+	return dm, nil
 }

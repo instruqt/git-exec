@@ -270,6 +270,6 @@ func TestPull(t *testing.T) {
 	// pull the changes from the first repository to the second repository
 	git.SetWorkingDirectory(second)
 
-	err = git.Pull()
+	_, err = git.Pull()
 	require.NoError(t, err)
 }

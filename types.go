@@ -67,6 +67,12 @@ type DiffStat struct {
 	Deletions  int
 }
 
+type DiffMode struct {
+	Action string
+	Mode   int
+	File   string
+}
+
 type Remote struct {
 	Name string
 	URL  string
@@ -91,4 +97,12 @@ type Ref struct {
 	From    string
 	To      string
 	Reason  *string
+}
+
+type MergeResult struct {
+	StartCommit string
+	EndCommit   string
+	Method      string
+	DiffStats   []DiffStat
+	DiffModes   []DiffMode
 }
