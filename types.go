@@ -1,16 +1,30 @@
 package git
 
+import "time"
+
 type FileStatus string
 
+type RefStatus string
+
 const (
-	FileStatusUntracked  FileStatus = "untracked"
-	FileStatusUnmodified FileStatus = "unmodified"
-	FileStatusModified   FileStatus = "modified"
-	FileStatusAdded      FileStatus = "added"
-	FileStatusDeleted    FileStatus = "deleted"
-	FileStatusRenamed    FileStatus = "renamed"
-	FileStatusCopied     FileStatus = "copied"
-	FileStatusUpdated    FileStatus = "updated"
+	FileStatusUnspecified FileStatus = "unspecified"
+	FileStatusUntracked   FileStatus = "untracked"
+	FileStatusUnmodified  FileStatus = "unmodified"
+	FileStatusModified    FileStatus = "modified"
+	FileStatusAdded       FileStatus = "added"
+	FileStatusDeleted     FileStatus = "deleted"
+	FileStatusRenamed     FileStatus = "renamed"
+	FileStatusCopied      FileStatus = "copied"
+	FileStatusUpdated     FileStatus = "updated"
+
+	RefStatusUnspecified  RefStatus = "unspecified"
+	RefStatusFastForward  RefStatus = "fast_forward"  // " "
+	RefStatusForcedUpdate RefStatus = "forced_update" // "+"
+	RefStatusPruned       RefStatus = "pruned"        // "-"
+	RefStatusTagUpdate    RefStatus = "tag_update"    // "t"
+	RefStatusNew          RefStatus = "new"           // "*"
+	RefStatusRejected     RefStatus = "rejected"      // "!"
+	RefStatusUpToDate     RefStatus = "up_to_date"    // "="
 )
 
 type File struct {
@@ -46,7 +60,35 @@ type DiffHeader struct {
 	Index              *string
 }
 
+type DiffStat struct {
+	File       string
+	Changes    int
+	Insertions int
+	Deletions  int
+}
+
 type Remote struct {
 	Name string
 	URL  string
+}
+
+type Log struct {
+	Commit        string
+	Tree          string
+	Parent        string
+	Author        string
+	AuthorDate    time.Time
+	Message       string
+	Committer     string
+	CommitterDate time.Time
+	Diffs         []Diff
+}
+
+type Ref struct {
+	Remote  string
+	Status  RefStatus
+	Summary string
+	From    string
+	To      string
+	Reason  *string
 }

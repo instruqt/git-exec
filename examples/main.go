@@ -20,6 +20,12 @@ func main() {
 
 	git.SetWorkingDirectory("/Users/erik/code/instruqt/git-exec")
 
+	output, err := git.Show("HEAD")
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("show", output)
+
 	// output, err := git.Init(tmp)
 	// if err != nil {
 	// 	log.Fatal(err)

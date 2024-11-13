@@ -1,12 +1,14 @@
 package git
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os/exec"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Git interface {
@@ -22,9 +24,10 @@ type Git interface {
 	Reset(files ...string) error
 	Commit(message string, author string, email string) error
 	Diff() ([]Diff, error)
-	Show() error
-	Log() error
-	Fetch() error
+	Show(object string) (*Log, error)
+	Log() ([]Log, error)
+	Fetch() ([]Ref, error)
+
 	Pull() error
 	Push() error
 	ListBranches() ([]Branch, error)
@@ -261,7 +264,13 @@ func (g *git) Status() ([]File, error) {
 }
 
 func (g *git) Commit(message string, author string, email string) error {
-	cmd := exec.Command(g.path, "commit", "-q", "-m", message, fmt.Sprintf(`--author="%s <%s>"`, author, email))
+	cmd := exec.Command(g.path, "commit", "-q", "-m", message)
+
+	cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_AUTHOR_NAME=%s", author))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_AUTHOR_EMAIL=%s", email))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_COMMITTER_NAME=%s", author))
+	cmd.Env = append(cmd.Env, fmt.Sprintf("GIT_COMMITTER_EMAIL=%s", email))
+
 	if g.wd != "" {
 		cmd.Dir = g.wd
 	}
@@ -283,7 +292,6 @@ func (g *git) Commit(message string, author string, email string) error {
 }
 
 func (g *git) Diff() ([]Diff, error) {
-	diffs := []Diff{}
 	cmd := exec.Command(g.path, "diff", "-U1000000", "--histogram")
 	if g.wd != "" {
 		cmd.Dir = g.wd
@@ -295,59 +303,21 @@ func (g *git) Diff() ([]Diff, error) {
 			if exitError.Stderr == nil {
 				exitError.Stderr = output
 			}
-			return diffs, errors.New(string(exitError.Stderr))
+			return nil, errors.New(string(exitError.Stderr))
 		}
-		return diffs, err
+		return nil, err
 	}
 
-	// split the output of the individual diffs and capture the names of the files
-	fileRegex := regexp.MustCompile(`diff --(.+) a/(.+) b/(.+)`)
-	files := fileRegex.Split(string(output), -1)
-	names := fileRegex.FindAllStringSubmatch(string(output), -1)
-
-	nameIndex := 0
-	for _, file := range files {
-		if file == "" {
-			continue
-		}
-
-		// split the diff into the header and the contents
-		contentsRegex := regexp.MustCompile(`(?s)(.*)@@ -\d(?:,\d+)? \+\d(?:,\d+)? @@\n(?s)(.*)`)
-		parts := contentsRegex.FindAllStringSubmatch(file, -1)
-
-		if len(parts) == 0 {
-			return diffs, errors.New("could not find diff")
-		}
-
-		if len(parts) > 1 {
-			return diffs, errors.New("found more than one diff")
-		}
-
-		header := parts[0][1]
-		contents := parts[0][2]
-
-		dh, err := parseDiffHeader(header)
-		if err != nil {
-			return diffs, err
-		}
-
-		diffs = append(diffs, Diff{
-			Format:   names[nameIndex][1],
-			OldFile:  names[nameIndex][2],
-			NewFile:  names[nameIndex][3],
-			Header:   dh,
-			Contents: contents,
-		})
-
-		nameIndex++
+	diffs, err := parseDiffs(string(output))
+	if err != nil {
+		return nil, err
 	}
 
 	return diffs, nil
 }
 
-// TODO: implement
-func (g *git) Show() error {
-	cmd := exec.Command(g.path, "x")
+func (g *git) Show(object string) (*Log, error) {
+	cmd := exec.Command(g.path, "show", "--format=fuller", object)
 	if g.wd != "" {
 		cmd.Dir = g.wd
 	}
@@ -359,17 +329,52 @@ func (g *git) Show() error {
 				exitError.Stderr = output
 			}
 
-			return errors.New(string(exitError.Stderr))
+			return nil, errors.New(string(exitError.Stderr))
 		}
 
-		return err
+		return nil, err
 	}
-	return nil
+
+	detailsRegex := regexp.MustCompile(`(?s)commit (?P<commit>.+)\nAuthor:\s+(?P<author>.+)\nAuthorDate:\s+(?P<author_date>.+)\nCommit:\s+(?P<committer>.+)\nCommitDate:\s+(?P<committer_date>.+)\n\n\s+(?P<message>.*)\n\n(?P<diff>.*)`)
+	matches := detailsRegex.FindAllStringSubmatch(string(output), -1)
+
+	details := make(map[string]string)
+	for i, name := range detailsRegex.SubexpNames() {
+		if i != 0 && name != "" {
+			details[name] = matches[0][i]
+		}
+	}
+
+	authorDate, err := time.Parse("Mon Jan 2 15:04:05 2006 -0700", details["author_date"])
+	if err != nil {
+		return nil, err
+	}
+
+	committerDate, err := time.Parse("Mon Jan 2 15:04:05 2006 -0700", details["committer_date"])
+	if err != nil {
+		return nil, err
+	}
+
+	diffs, err := parseDiffs(details["diff"])
+	if err != nil {
+		return nil, err
+	}
+
+	return &Log{
+		Commit:        details["commit"],
+		Tree:          "", // These show up on the cli..but not when running with golang..
+		Parent:        "", // These show up on the cli..but not when running with golang..
+		Author:        details["author"],
+		AuthorDate:    authorDate,
+		Message:       details["message"],
+		Committer:     details["committer"],
+		CommitterDate: committerDate,
+		Diffs:         diffs,
+	}, nil
 }
 
-// TODO: implement
-func (g *git) Log() error {
-	cmd := exec.Command(g.path, "x")
+func (g *git) Log() ([]Log, error) {
+	cmd := exec.Command(g.path, "log", "--format=fuller")
 	if g.wd != "" {
 		cmd.Dir = g.wd
 	}
@@ -381,37 +386,136 @@ func (g *git) Log() error {
 				exitError.Stderr = output
 			}
 
-			return errors.New(string(exitError.Stderr))
+			return nil, errors.New(string(exitError.Stderr))
 		}
 
-		return err
+		return nil, err
 	}
-	return nil
+
+	detailsRegex := regexp.MustCompile(`commit (?P<commit>.+)\nAuthor:\s+(?P<author>.+)\nAuthorDate:\s+(?P<author_date>.+)\nCommit:\s+(?P<committer>.+)\nCommitDate:\s+(?P<committer_date>.+)\n\n\s+(?P<message>.*)(?:\n\n)?`)
+	matches := detailsRegex.FindAllStringSubmatch(string(output), -1)
+
+	logs := []Log{}
+	for _, match := range matches {
+		details := make(map[string]string)
+		for i, name := range detailsRegex.SubexpNames() {
+			if i != 0 && name != "" {
+				details[name] = match[i]
+			}
+		}
+
+		authorDate, err := time.Parse("Mon Jan 2 15:04:05 2006 -0700", details["author_date"])
+		if err != nil {
+			return nil, err
+		}
+
+		committerDate, err := time.Parse("Mon Jan 2 15:04:05 2006 -0700", details["committer_date"])
+		if err != nil {
+			return nil, err
+		}
+
+		logs = append(logs, Log{
+			Commit:        details["commit"],
+			Tree:          "", // These show up on the cli..but not when running with golang..
+			Parent:        "", // These show up on the cli..but not when running with golang..
+			Author:        details["author"],
+			AuthorDate:    authorDate,
+			Message:       details["message"],
+			Committer:     details["committer"],
+			CommitterDate: committerDate,
+		})
+	}
+
+	return logs, nil
 }
 
 // TODO: implement
-func (g *git) Fetch() error {
-	cmd := exec.Command(g.path, "fetch")
+func (g *git) Fetch() ([]Ref, error) {
+	cmd := exec.Command(g.path, "fetch", "-v", "--refetch")
 	if g.wd != "" {
 		cmd.Dir = g.wd
 	}
 
-	output, err := cmd.Output()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			if exitError.Stderr == nil {
-				exitError.Stderr = output
+				exitError.Stderr = stderr.Bytes()
 			}
 
-			return errors.New(string(exitError.Stderr))
+			return nil, errors.New(string(exitError.Stderr))
 		}
 
-		return err
+		return nil, err
 	}
-	return nil
+
+	// fetch writes its output on stderr
+	output := stderr.Bytes()
+
+	remotesRegex := regexp.MustCompile(`From (?P<remote>.+)\n`)
+	remotes := remotesRegex.Split(string(output), -1)
+	remoteMatches := remotesRegex.FindAllStringSubmatch(string(output), -1)
+
+	refs := []Ref{}
+
+	remoteIndex := 0
+	for _, remote := range remotes {
+		if remote == "" {
+			continue
+		}
+
+		remoteName := remoteMatches[remoteIndex][1]
+
+		// TODO: handle reason in case of a rejected ref
+		refRegex := regexp.MustCompile(`\s+(?P<status>.{1})\s+(?P<summary>\[up to date\]|\[new branch\]|\[new tag]|\S+)\s+\s(?P<from>\S+)\s+->\s+(?P<to>\S+)\n`)
+		refMatches := refRegex.FindAllStringSubmatch(remote, -1)
+
+		for _, refMatch := range refMatches {
+			ref := make(map[string]string)
+			for i, name := range refRegex.SubexpNames() {
+				if i != 0 && name != "" {
+					ref[name] = refMatch[i]
+				}
+			}
+
+			status := RefStatusUnspecified
+			switch ref["status"] {
+			case " ":
+				status = RefStatusFastForward
+			case "+":
+				status = RefStatusForcedUpdate
+			case "*":
+				status = RefStatusNew
+			case "-":
+				status = RefStatusPruned
+			case "!":
+				status = RefStatusRejected
+			case "=":
+				status = RefStatusUpToDate
+			case "t":
+				status = RefStatusTagUpdate
+			}
+
+			refs = append(refs, Ref{
+				Remote:  remoteName,
+				Status:  status,
+				Summary: ref["summary"],
+				From:    ref["from"],
+				To:      ref["to"],
+				Reason:  nil,
+			})
+		}
+
+		remoteIndex++
+	}
+
+	return refs, nil
 }
 
-// TODO: implement
 func (g *git) Pull() error {
 	cmd := exec.Command(g.path, "pull")
 	if g.wd != "" {
@@ -430,6 +534,49 @@ func (g *git) Pull() error {
 
 		return err
 	}
+
+	pullRegex := regexp.MustCompile(`Updating\s(?P<commits>\S+)\nFast-forward\n(?P<files>(?:\s.+\|\s+\d+\s[\+\-]+\n)*)\s(?P<changes>\d+) file(?:s)? changed(?:, (?P<insertions>\d+) insertion(?:s)?\(\+\))?(?:, (?P<deletions>\d+) deletion(?:s)?\(\-\))?\n(?P<modes>(?:\s(?:create|delete) mode \d+ \S+\n?)*)?`)
+	pullMatches := pullRegex.FindAllStringSubmatch(string(output), -1)
+
+	for _, pullMatch := range pullMatches {
+		pull := make(map[string]string)
+		for i, name := range pullRegex.SubexpNames() {
+			if i != 0 && name != "" {
+				pull[name] = pullMatch[i]
+			}
+		}
+
+		filesRegex := regexp.MustCompile(`\s(?P<file>.+)\|\s+(?P<changes>\d+)\s(?P<insertions>\+*)?(?P<deletions>-*)?\n`)
+		filesMatches := filesRegex.FindAllStringSubmatch(pull["files"], -1)
+
+		for _, filesMatch := range filesMatches {
+			files := make(map[string]string)
+			for i, name := range filesRegex.SubexpNames() {
+				if i != 0 && name != "" {
+					files[name] = filesMatch[i]
+				}
+			}
+
+			fileName := strings.Trim(files["file"], " ")
+			changes, err := strconv.Atoi(files["changes"])
+			if err != nil {
+				return err
+			}
+
+			insertions := len(files["insertions"])
+			deletions := len(files["deletions"])
+
+			diffStat := DiffStat{
+				File:       fileName,
+				Changes:    changes,
+				Insertions: insertions,
+				Deletions:  deletions,
+			}
+
+			fmt.Println(diffStat)
+		}
+	}
+
 	return nil
 }
 
@@ -861,4 +1008,51 @@ func parseDiffHeader(header string) (DiffHeader, error) {
 	}
 
 	return dh, nil
+}
+
+func parseDiffs(input string) ([]Diff, error) {
+	diffs := []Diff{}
+	// split the output of the individual diffs and capture the names of the files
+	fileRegex := regexp.MustCompile(`diff --(.+) a/(.+) b/(.+)`)
+	files := fileRegex.Split(input, -1)
+	names := fileRegex.FindAllStringSubmatch(input, -1)
+
+	nameIndex := 0
+	for _, file := range files {
+		if file == "" {
+			continue
+		}
+
+		// split the diff into the header and the contents
+		contentsRegex := regexp.MustCompile(`(?s)(.*)@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@\n?(?s)(?P<contents>.*)`)
+		parts := contentsRegex.FindAllStringSubmatch(file, -1)
+
+		if len(parts) == 0 {
+			return nil, errors.New("could not find diff")
+		}
+
+		if len(parts) > 1 {
+			return nil, errors.New("found more than one diff")
+		}
+
+		header := parts[0][1]
+		contents := parts[0][2]
+
+		dh, err := parseDiffHeader(header)
+		if err != nil {
+			return nil, err
+		}
+
+		diffs = append(diffs, Diff{
+			Format:   names[nameIndex][1],
+			OldFile:  names[nameIndex][2],
+			NewFile:  names[nameIndex][3],
+			Header:   dh,
+			Contents: contents,
+		})
+
+		nameIndex++
+	}
+
+	return diffs, nil
 }
