@@ -1,11 +1,73 @@
-package git
+package errors
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
 var (
 	ErrNotEmptyRepository = errors.New("destination path already exists and is not an empty directory")
 	ErrUnknownRevision    = errors.New("unknown revision or path not in the working tree")
 )
+
+// ErrorType represents different categories of Git errors
+type ErrorType int
+
+const (
+	ErrorUnknown ErrorType = iota
+	ErrorConflict
+	ErrorAuth
+	ErrorNetwork
+	ErrorNotFound
+	ErrorPermission
+	ErrorNotRepository
+	ErrorRemoteRejected
+)
+
+// GitError represents a structured Git command error
+type GitError struct {
+	Command   []string
+	ExitCode  int
+	Stderr    string
+	Stdout    string
+	ErrorType ErrorType
+}
+
+// Error implements the error interface
+func (e *GitError) Error() string {
+	return fmt.Sprintf("git %s failed with exit code %d: %s",
+		strings.Join(e.Command, " "), e.ExitCode, e.Stderr)
+}
+
+// ParseErrorType attempts to determine the error type from the stderr output
+func (e *GitError) ParseErrorType() ErrorType {
+	stderr := strings.ToLower(e.Stderr)
+	
+	// Check for specific error patterns
+	switch {
+	case strings.Contains(stderr, "conflict"):
+		return ErrorConflict
+	case strings.Contains(stderr, "authentication") || 
+	     strings.Contains(stderr, "permission denied") ||
+	     strings.Contains(stderr, "could not read username"):
+		return ErrorAuth
+	case strings.Contains(stderr, "could not resolve host") ||
+	     strings.Contains(stderr, "network"):
+		return ErrorNetwork
+	case strings.Contains(stderr, "not found") ||
+	     strings.Contains(stderr, "does not exist") ||
+	     strings.Contains(stderr, "pathspec"):
+		return ErrorNotFound
+	case strings.Contains(stderr, "not a git repository"):
+		return ErrorNotRepository
+	case strings.Contains(stderr, "rejected") ||
+	     strings.Contains(stderr, "non-fast-forward"):
+		return ErrorRemoteRejected
+	default:
+		return ErrorUnknown
+	}
+}
 
 /*
 https://jvns.ca/blog/2024/04/10/notes-on-git-error-messages/
