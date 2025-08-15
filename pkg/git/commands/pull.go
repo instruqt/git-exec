@@ -39,17 +39,17 @@ func (g *git) Pull(opts ...Option) (*types.MergeResult, error) {
 		result.EndCommit = pull["end_commit"]
 		result.Method = pull["method"]
 
-		diffStat, err := parseDiffStats(pull["files"])
+		diffStats, err := parseDiffStats(pull["files"])
 		if err != nil {
 			return nil, err
 		}
-		result.DiffStats = append(result.DiffStats, diffStat)
+		result.DiffStats = append(result.DiffStats, diffStats...)
 
-		diffMode, err := parseDiffModes(pull["modes"])
+		diffModes, err := parseDiffModes(pull["modes"])
 		if err != nil {
 			return nil, err
 		}
-		result.DiffModes = append(result.DiffModes, diffMode)
+		result.DiffModes = append(result.DiffModes, diffModes...)
 	}
 
 	return result, nil

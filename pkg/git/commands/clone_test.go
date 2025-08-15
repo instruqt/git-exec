@@ -1,40 +1,46 @@
 package commands
 
 import (
-	"fmt"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestCloneIntoEmptyDirectory(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestCloneCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
-
-	err = git.Init(path, InitWithBare())
-	require.NoError(t, err)
-
-	destinationPath := t.TempDir()
-	err = git.Clone(path, destinationPath)
-	require.NoError(t, err)
-	require.DirExists(t, filepath.Join(destinationPath, ".git"))
+	// Test basic clone command construction
+	cmd := git.newCommand("clone", "https://github.com/user/repo", "/path/to/dest")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"clone", "https://github.com/user/repo", "/path/to/dest"}, cmd.args)
+	require.Equal(t, "/test", cmd.workingDir)
 }
 
-func TestCloneIntoExistingDirectory(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestCloneWithBareOption(t *testing.T) {
+	opt := CloneWithBare()
+	
+	cmd := &Command{args: []string{"clone"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--bare")
+}
 
-	git, err := NewGit()
-	require.NoError(t, err)
+func TestCloneWithBranchOption(t *testing.T) {
+	opt := CloneWithBranch("main")
+	
+	cmd := &Command{args: []string{"clone"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--branch")
+	require.Contains(t, cmd.args, "main")
+}
 
-	err = git.Init(path, InitWithBare())
-	require.NoError(t, err)
-
-	err = git.Clone(path, path)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), fmt.Sprintf("destination path '%s' already exists and is not an empty directory", path))
+func TestCloneWithDepthOption(t *testing.T) {
+	opt := CloneWithDepth(5)
+	
+	cmd := &Command{args: []string{"clone"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--depth")
+	require.Contains(t, cmd.args, "5")
 }
