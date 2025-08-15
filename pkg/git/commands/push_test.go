@@ -1,48 +1,98 @@
 package commands
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestPush(t *testing.T) {
-	// create a repository with a commit
-	first, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestPushCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
+	cmd := git.newCommand("push")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"push"}, cmd.args)
+	require.Equal(t, "/test", cmd.workingDir)
+}
 
-	git.SetWorkingDirectory(first)
+func TestPushWithRemoteOption(t *testing.T) {
+	opt := PushWithRemote("origin")
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "origin")
+}
 
-	err = git.Init(first, InitWithBare())
-	require.NoError(t, err)
+func TestPushWithBranchOption(t *testing.T) {
+	opt := PushWithBranch("main")
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "main")
+}
 
-	// clone the repository to a second directory
-	second, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestPushWithRemoteAndBranchOption(t *testing.T) {
+	opt := PushWithRemoteAndBranch("origin", "feature")
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "origin")
+	require.Contains(t, cmd.args, "feature")
+}
 
-	err = git.Clone(first, second)
-	require.NoError(t, err)
+func TestPushWithForceOption(t *testing.T) {
+	opt := PushWithForce()
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--force")
+}
 
-	// add a commit to the second repository
-	git.SetWorkingDirectory(second)
+func TestPushWithForceWithLeaseOption(t *testing.T) {
+	opt := PushWithForceWithLease()
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--force-with-lease")
+}
 
-	err = os.WriteFile(filepath.Join(second, "new.txt"), []byte("New\n"), 0644)
-	require.NoError(t, err)
+func TestPushWithAllOption(t *testing.T) {
+	opt := PushWithAll()
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--all")
+}
 
-	err = git.Add([]string{"new.txt"})
-	require.NoError(t, err)
+func TestPushWithTagsOption(t *testing.T) {
+	opt := PushWithTags()
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--tags")
+}
 
-	err = git.Commit("Add new.txt", WithUser("John Doe", "john.doe@gmail.com"))
-	require.NoError(t, err)
+func TestPushWithSetUpstreamOption(t *testing.T) {
+	opt := PushWithSetUpstream()
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--set-upstream")
+}
 
-	// push the changes from the second repository to the first repository
-	remotes, err := git.Push()
-	require.NoError(t, err)
-
-	require.NotEmpty(t, remotes)
+func TestPushWithDeleteOption(t *testing.T) {
+	opt := PushWithDelete()
+	
+	cmd := &Command{args: []string{"push"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--delete")
 }

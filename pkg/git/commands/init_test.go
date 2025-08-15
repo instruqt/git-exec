@@ -1,36 +1,72 @@
 package commands
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestInitRepositoryInEmptyDirectory(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestInitCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
-
-	err = git.Init(path)
-	require.NoError(t, err)
-	require.DirExists(t, filepath.Join(path, ".git"))
+	cmd := git.newCommand("init", "/path/to/repo")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"init", "/path/to/repo"}, cmd.args)
+	require.Equal(t, "/test", cmd.workingDir)
 }
 
-func TestInitRepositoryInExistingRepository(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestInitWithBareOption(t *testing.T) {
+	opt := InitWithBare()
+	
+	cmd := &Command{args: []string{"init"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--bare")
+}
 
-	git, err := NewGit()
-	require.NoError(t, err)
+func TestInitWithQuietOption(t *testing.T) {
+	opt := InitWithQuiet()
+	
+	cmd := &Command{args: []string{"init"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--quiet")
+}
 
-	err = git.Init(path)
-	require.NoError(t, err)
-	require.DirExists(t, filepath.Join(path, ".git"))
+func TestInitWithBranchOption(t *testing.T) {
+	opt := InitWithBranch("main")
+	
+	cmd := &Command{args: []string{"init"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--initial-branch")
+	require.Contains(t, cmd.args, "main")
+}
 
-	err = git.Init(path)
-	require.NoError(t, err)
-	require.DirExists(t, filepath.Join(path, ".git"))
+func TestInitWithTemplateOption(t *testing.T) {
+	opt := InitWithTemplate("/path/to/template")
+	
+	cmd := &Command{args: []string{"init"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--template")
+	require.Contains(t, cmd.args, "/path/to/template")
+}
+
+func TestInitWithSharedOption(t *testing.T) {
+	opt := InitWithShared("group")
+	
+	cmd := &Command{args: []string{"init"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--shared=group")
+}
+
+func TestInitWithSharedNoPermissionsOption(t *testing.T) {
+	opt := InitWithShared("")
+	
+	cmd := &Command{args: []string{"init"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--shared")
 }

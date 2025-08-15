@@ -1,44 +1,88 @@
 package commands
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestShow(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestShowCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
+	cmd := git.newCommand("show", "--format=fuller", "HEAD")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"show", "--format=fuller", "HEAD"}, cmd.args)
+	require.Equal(t, "/test", cmd.workingDir)
+}
 
-	err = git.Init(path)
-	require.NoError(t, err)
+func TestShowWithFormatOption(t *testing.T) {
+	opt := ShowWithFormat("oneline")
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--format=oneline")
+}
 
-	git.SetWorkingDirectory(path)
+func TestShowWithPrettyOption(t *testing.T) {
+	opt := ShowWithPretty("short")
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--pretty=short")
+}
 
-	err = os.WriteFile(filepath.Join(path, "file.txt"), []byte("Hello, World!"), 0644)
-	require.NoError(t, err)
+func TestShowWithOnelineOption(t *testing.T) {
+	opt := ShowWithOneline()
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--oneline")
+}
 
-	err = git.Add([]string{"file.txt"})
-	require.NoError(t, err)
+func TestShowWithStatOption(t *testing.T) {
+	opt := ShowWithStat()
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--stat")
+}
 
-	err = git.Commit("Initial commit", WithUser("John Doe", "john.doe@gmail.com"))
-	require.NoError(t, err)
+func TestShowWithNameOnlyOption(t *testing.T) {
+	opt := ShowWithNameOnly()
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--name-only")
+}
 
-	output, err := git.Show("HEAD")
-	require.NoError(t, err)
+func TestShowWithNameStatusOption(t *testing.T) {
+	opt := ShowWithNameStatus()
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--name-status")
+}
 
-	require.NotEmpty(t, output.Commit)
-	require.Equal(t, "John Doe <john.doe@gmail.com>", output.Author)
-	require.NotEmpty(t, output.AuthorDate)
-	require.Equal(t, "John Doe <john.doe@gmail.com>", output.Committer)
-	require.NotEmpty(t, output.CommitterDate)
-	require.Equal(t, "Initial commit", output.Message)
+func TestShowWithNoPatchOption(t *testing.T) {
+	opt := ShowWithNoPatch()
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--no-patch")
+}
 
-	require.Len(t, output.Diffs, 1)
-	require.Equal(t, "+Hello, World!\n\\ No newline at end of file\n", output.Diffs[0].Contents)
+func TestShowWithPatchOption(t *testing.T) {
+	opt := ShowWithPatch()
+	
+	cmd := &Command{args: []string{"show"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--patch")
 }

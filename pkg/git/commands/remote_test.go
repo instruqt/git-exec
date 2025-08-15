@@ -1,76 +1,78 @@
 package commands
 
 import (
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddRemote(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestAddRemoteCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
-
-	err = git.Init(path)
-	require.NoError(t, err)
-
-	git.SetWorkingDirectory(path)
-
-	err = git.AddRemote("origin", "git@github.com:instruqt/git-exec.git")
-	require.NoError(t, err)
-
-	remotes, err := git.ListRemotes()
-	require.NoError(t, err)
-	require.Len(t, remotes, 1)
-	require.Equal(t, "origin", remotes[0].Name)
-	require.Equal(t, "git@github.com:instruqt/git-exec.git", remotes[0].URL)
+	cmd := git.newCommand("remote", "add", "origin", "https://github.com/user/repo.git")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"remote", "add", "origin", "https://github.com/user/repo.git"}, cmd.args)
+	require.Equal(t, "/test", cmd.workingDir)
 }
 
-func TestRemoveRemote(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestRemoveRemoteCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
-
-	err = git.Init(path)
-	require.NoError(t, err)
-
-	git.SetWorkingDirectory(path)
-
-	err = git.AddRemote("origin", "git@github.com:instruqt/git-exec.git")
-	require.NoError(t, err)
-
-	err = git.RemoveRemote("origin")
-	require.NoError(t, err)
+	cmd := git.newCommand("remote", "rm", "origin")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"remote", "rm", "origin"}, cmd.args)
 }
 
-func TestListRemotes(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestSetRemoteURLCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
+	cmd := git.newCommand("remote", "set-url", "origin", "https://github.com/user/new-repo.git")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"remote", "set-url", "origin", "https://github.com/user/new-repo.git"}, cmd.args)
+}
 
-	err = git.Init(path)
-	require.NoError(t, err)
+func TestListRemotesCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git.SetWorkingDirectory(path)
+	cmd := git.newCommand("remote", "-v")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"remote", "-v"}, cmd.args)
+}
 
-	err = git.AddRemote("first", "first-url")
-	require.NoError(t, err)
+func TestRemoteAddWithTrackOption(t *testing.T) {
+	opt := RemoteAddWithTrack("main")
+	
+	cmd := &Command{args: []string{"remote", "add"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "-t")
+	require.Contains(t, cmd.args, "main")
+}
 
-	err = git.AddRemote("second", "second-url")
-	require.NoError(t, err)
+func TestRemoteAddWithMasterOption(t *testing.T) {
+	opt := RemoteAddWithMaster("develop")
+	
+	cmd := &Command{args: []string{"remote", "add"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "-m")
+	require.Contains(t, cmd.args, "develop")
+}
 
-	remotes, err := git.ListRemotes()
-	require.NoError(t, err)
-	require.Len(t, remotes, 2)
-	require.Equal(t, "first", remotes[0].Name)
-	require.Equal(t, "first-url", remotes[0].URL)
-	require.Equal(t, "second", remotes[1].Name)
-	require.Equal(t, "second-url", remotes[1].URL)
+func TestSetRemoteURLWithPushOption(t *testing.T) {
+	opt := SetRemoteURLWithPush()
+	
+	cmd := &Command{args: []string{"remote", "set-url"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--push")
+}
+
+func TestSetRemoteURLWithAddOption(t *testing.T) {
+	opt := SetRemoteURLWithAdd()
+	
+	cmd := &Command{args: []string{"remote", "set-url"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--add")
 }

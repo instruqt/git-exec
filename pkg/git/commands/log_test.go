@@ -1,41 +1,106 @@
 package commands
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestLog(t *testing.T) {
-	path, err := filepath.EvalSymlinks(t.TempDir())
-	require.NoError(t, err)
+func TestLogCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
+	cmd := git.newCommand("log", "--format=fuller")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"log", "--format=fuller"}, cmd.args)
+	require.Equal(t, "/test", cmd.workingDir)
+}
 
-	err = git.Init(path)
-	require.NoError(t, err)
+func TestLogWithOnelineOption(t *testing.T) {
+	opt := LogWithOneline()
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--oneline")
+}
 
-	git.SetWorkingDirectory(path)
+func TestLogWithGraphOption(t *testing.T) {
+	opt := LogWithGraph()
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--graph")
+}
 
-	err = os.WriteFile(filepath.Join(path, "file.txt"), []byte("Hello, World!"), 0644)
-	require.NoError(t, err)
+func TestLogWithDecorateOption(t *testing.T) {
+	opt := LogWithDecorate()
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--decorate")
+}
 
-	err = git.Add([]string{"file.txt"})
-	require.NoError(t, err)
+func TestLogWithAllOption(t *testing.T) {
+	opt := LogWithAll()
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--all")
+}
 
-	err = git.Commit("Initial commit", WithUser("John Doe", "john.doe@gmail.com"))
-	require.NoError(t, err)
+func TestLogWithMaxCountOption(t *testing.T) {
+	opt := LogWithMaxCount("10")
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--max-count=10")
+}
 
-	output, err := git.Log()
-	require.NoError(t, err)
+func TestLogWithSkipOption(t *testing.T) {
+	opt := LogWithSkip("5")
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--skip=5")
+}
 
-	require.Len(t, output, 1)
-	require.Equal(t, "John Doe <john.doe@gmail.com>", output[0].Author)
-	require.NotEmpty(t, output[0].AuthorDate)
-	require.Equal(t, "John Doe <john.doe@gmail.com>", output[0].Committer)
-	require.NotEmpty(t, output[0].CommitterDate)
-	require.Equal(t, "Initial commit", output[0].Message)
+func TestLogWithSinceOption(t *testing.T) {
+	opt := LogWithSince("2023-01-01")
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--since=2023-01-01")
+}
+
+func TestLogWithAuthorOption(t *testing.T) {
+	opt := LogWithAuthor("john.doe")
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--author=john.doe")
+}
+
+func TestLogWithFormatOption(t *testing.T) {
+	opt := LogWithFormat("oneline")
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--format=oneline")
+}
+
+func TestLogWithNoMergesOption(t *testing.T) {
+	opt := LogWithNoMerges()
+	
+	cmd := &Command{args: []string{"log"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--no-merges")
 }

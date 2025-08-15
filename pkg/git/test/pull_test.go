@@ -1,6 +1,7 @@
-package commands
+package test
 
 import (
+	"github.com/instruqt/git-exec/pkg/git/commands"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,7 @@ func TestPull(t *testing.T) {
 	first, err := filepath.EvalSymlinks(t.TempDir())
 	require.NoError(t, err)
 
-	git, err := NewGit()
+	git, err := commands.NewGit()
 	require.NoError(t, err)
 
 	git.SetWorkingDirectory(first)
@@ -27,7 +28,7 @@ func TestPull(t *testing.T) {
 	err = git.Add([]string{"file.txt"})
 	require.NoError(t, err)
 
-	err = git.Commit("Initial commit", WithUser("John Doe", "john.doe@gmail.com"))
+	err = git.Commit("Initial commit", commands.WithUser("John Doe", "john.doe@gmail.com"))
 	require.NoError(t, err)
 
 	// clone the repository to a second directory
@@ -46,7 +47,7 @@ func TestPull(t *testing.T) {
 	err = git.Add([]string{"new.txt"})
 	require.NoError(t, err)
 
-	err = git.Commit("Add new.txt", WithUser("John Doe", "john.doe@gmail.com"))
+	err = git.Commit("Add new.txt", commands.WithUser("John Doe", "john.doe@gmail.com"))
 	require.NoError(t, err)
 
 	// pull the changes from the first repository to the second repository

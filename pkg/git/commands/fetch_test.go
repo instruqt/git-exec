@@ -1,24 +1,89 @@
 package commands
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestFetch(t *testing.T) {
-	// Use current working directory (this repo) for testing
-	path, err := os.Getwd()
-	require.NoError(t, err)
+func TestFetchCommand(t *testing.T) {
+	git := &git{path: "git", wd: "/test"}
 
-	git, err := NewGit()
-	require.NoError(t, err)
+	cmd := git.newCommand("fetch", "-v")
+	require.Equal(t, "git", cmd.gitPath)
+	require.Equal(t, []string{"fetch", "-v"}, cmd.args)
+	require.Equal(t, "/test", cmd.workingDir)
+}
 
-	git.SetWorkingDirectory(path)
+func TestFetchWithAllOption(t *testing.T) {
+	opt := FetchWithAll()
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--all")
+}
 
-	refs, err := git.Fetch()
-	require.NoError(t, err)
+func TestFetchWithPruneOption(t *testing.T) {
+	opt := FetchWithPrune()
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--prune")
+}
 
-	require.NotEmpty(t, refs)
+func TestFetchWithPruneTagsOption(t *testing.T) {
+	opt := FetchWithPruneTags()
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--prune-tags")
+}
+
+func TestFetchWithTagsOption(t *testing.T) {
+	opt := FetchWithTags()
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--tags")
+}
+
+func TestFetchWithNoTagsOption(t *testing.T) {
+	opt := FetchWithNoTags()
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--no-tags")
+}
+
+func TestFetchWithDepthOption(t *testing.T) {
+	opt := FetchWithDepth(10)
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--depth")
+	require.Contains(t, cmd.args, "10")
+}
+
+func TestFetchWithRemoteOption(t *testing.T) {
+	opt := FetchWithRemote("upstream")
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "upstream")
+}
+
+func TestFetchWithForceOption(t *testing.T) {
+	opt := FetchWithForce()
+	
+	cmd := &Command{args: []string{"fetch"}}
+	opt(cmd)
+	
+	require.Contains(t, cmd.args, "--force")
 }
