@@ -3,15 +3,16 @@ package commands
 import (
 	"strings"
 
+	gitpkg "github.com/instruqt/git-exec/pkg/git"
 	"github.com/instruqt/git-exec/pkg/git/types"
 )
 
 // ListBranches lists all local branches
-func (g *git) ListBranches(opts ...Option) ([]types.Branch, error) {
+func (g *git) ListBranches(opts ...gitpkg.Option) ([]types.Branch, error) {
 	cmd := g.newCommand("branch")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	output, err := cmd.Execute()
 	if err != nil {
@@ -35,33 +36,33 @@ func (g *git) ListBranches(opts ...Option) ([]types.Branch, error) {
 }
 
 // CreateBranch creates a new branch
-func (g *git) CreateBranch(branch string, opts ...Option) error {
+func (g *git) CreateBranch(branch string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("branch", branch)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
 }
 
 // SetUpstream sets the upstream for a branch
-func (g *git) SetUpstream(branch string, remote string, opts ...Option) error {
+func (g *git) SetUpstream(branch string, remote string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("branch", branch, "-u", remote+"/"+branch)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
 }
 
 // DeleteBranch deletes a branch
-func (g *git) DeleteBranch(branch string, opts ...Option) error {
+func (g *git) DeleteBranch(branch string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("branch", "-d", branch)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
@@ -70,27 +71,27 @@ func (g *git) DeleteBranch(branch string, opts ...Option) error {
 // Branch-specific options
 
 // BranchWithRemote lists remote-tracking branches
-func BranchWithRemote() Option {
+func BranchWithRemote() gitpkg.Option {
 	return WithArgs("-r")
 }
 
 // BranchWithAll lists both local and remote-tracking branches
-func BranchWithAll() Option {
+func BranchWithAll() gitpkg.Option {
 	return WithArgs("-a")
 }
 
 // BranchWithVerbose shows hash and commit subject line for each head
-func BranchWithVerbose() Option {
+func BranchWithVerbose() gitpkg.Option {
 	return WithArgs("-v")
 }
 
 // BranchWithVeryVerbose shows hash, commit subject line and upstream branch
-func BranchWithVeryVerbose() Option {
+func BranchWithVeryVerbose() gitpkg.Option {
 	return WithArgs("-vv")
 }
 
 // BranchWithColor uses colors in output
-func BranchWithColor(when string) Option {
+func BranchWithColor(when string) gitpkg.Option {
 	if when == "" {
 		return WithArgs("--color")
 	}
@@ -98,12 +99,12 @@ func BranchWithColor(when string) Option {
 }
 
 // BranchWithNoColor disables colors in output
-func BranchWithNoColor() Option {
+func BranchWithNoColor() gitpkg.Option {
 	return WithArgs("--no-color")
 }
 
 // BranchWithMerged shows only branches merged into the named commit
-func BranchWithMerged(commit string) Option {
+func BranchWithMerged(commit string) gitpkg.Option {
 	if commit == "" {
 		return WithArgs("--merged")
 	}
@@ -111,7 +112,7 @@ func BranchWithMerged(commit string) Option {
 }
 
 // BranchWithNoMerged shows only branches not merged into the named commit
-func BranchWithNoMerged(commit string) Option {
+func BranchWithNoMerged(commit string) gitpkg.Option {
 	if commit == "" {
 		return WithArgs("--no-merged")
 	}
@@ -119,43 +120,43 @@ func BranchWithNoMerged(commit string) Option {
 }
 
 // BranchWithContains shows only branches that contain the commit
-func BranchWithContains(commit string) Option {
+func BranchWithContains(commit string) gitpkg.Option {
 	return WithArgs("--contains", commit)
 }
 
 // BranchWithNoContains shows only branches that don't contain the commit
-func BranchWithNoContains(commit string) Option {
+func BranchWithNoContains(commit string) gitpkg.Option {
 	return WithArgs("--no-contains", commit)
 }
 
 // CreateBranchWithStartPoint creates branch starting from the specified commit
-func CreateBranchWithStartPoint(startPoint string) Option {
+func CreateBranchWithStartPoint(startPoint string) gitpkg.Option {
 	return WithArgs(startPoint)
 }
 
 // CreateBranchWithTrack sets up tracking when creating a branch
-func CreateBranchWithTrack() Option {
+func CreateBranchWithTrack() gitpkg.Option {
 	return WithArgs("--track")
 }
 
 // CreateBranchWithNoTrack doesn't set up tracking when creating a branch
-func CreateBranchWithNoTrack() Option {
+func CreateBranchWithNoTrack() gitpkg.Option {
 	return WithArgs("--no-track")
 }
 
 // CreateBranchWithForce forces creation (resets existing branch to start point)
-func CreateBranchWithForce() Option {
+func CreateBranchWithForce() gitpkg.Option {
 	return WithArgs("--force")
 }
 
 // Delete branch-specific options
 
 // DeleteBranchWithForce forces deletion of branch (even if not merged)
-func DeleteBranchWithForce() Option {
+func DeleteBranchWithForce() gitpkg.Option {
 	return WithArgs("-D")
 }
 
 // DeleteBranchWithRemote deletes remote-tracking branch
-func DeleteBranchWithRemote() Option {
+func DeleteBranchWithRemote() gitpkg.Option {
 	return WithArgs("-r")
 }

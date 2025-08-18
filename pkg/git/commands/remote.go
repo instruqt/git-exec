@@ -1,4 +1,5 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 import (
 	"regexp"
@@ -7,33 +8,33 @@ import (
 )
 
 // AddRemote adds a remote named <name> for the repository at <url>
-func (g *git) AddRemote(name, url string, opts ...Option) error {
+func (g *git) AddRemote(name, url string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("remote", "add", name, url)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
 }
 
 // RemoveRemote removes the remote named <name>
-func (g *git) RemoveRemote(name string, opts ...Option) error {
+func (g *git) RemoveRemote(name string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("remote", "rm", name)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
 }
 
 // ListRemotes shows the remote repositories along with their URLs
-func (g *git) ListRemotes(opts ...Option) ([]types.Remote, error) {
+func (g *git) ListRemotes(opts ...gitpkg.Option) ([]types.Remote, error) {
 	cmd := g.newCommand("remote", "-v")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	output, err := cmd.Execute()
 	if err != nil {
@@ -60,11 +61,11 @@ func (g *git) ListRemotes(opts ...Option) ([]types.Remote, error) {
 }
 
 // SetRemoteURL changes the URL of a remote repository
-func (g *git) SetRemoteURL(name, url string, opts ...Option) error {
+func (g *git) SetRemoteURL(name, url string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("remote", "set-url", name, url)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
@@ -73,54 +74,54 @@ func (g *git) SetRemoteURL(name, url string, opts ...Option) error {
 // Remote-specific options
 
 // RemoteWithVerbose shows URLs after name
-func RemoteWithVerbose() Option {
+func RemoteWithVerbose() gitpkg.Option {
 	return WithArgs("-v")
 }
 
 // RemoteAddWithTrack sets up branch tracking
-func RemoteAddWithTrack(branch string) Option {
+func RemoteAddWithTrack(branch string) gitpkg.Option {
 	return WithArgs("-t", branch)
 }
 
 // RemoteAddWithMaster sets the default branch
-func RemoteAddWithMaster(branch string) Option {
+func RemoteAddWithMaster(branch string) gitpkg.Option {
 	return WithArgs("-m", branch)
 }
 
 // RemoteAddWithFetch runs git fetch immediately after adding
-func RemoteAddWithFetch() Option {
+func RemoteAddWithFetch() gitpkg.Option {
 	return WithArgs("-f")
 }
 
 // SetRemoteURL-specific options
 
 // SetRemoteURLWithPush sets push URL instead of fetch URL
-func SetRemoteURLWithPush() Option {
+func SetRemoteURLWithPush() gitpkg.Option {
 	return WithArgs("--push")
 }
 
 // SetRemoteURLWithAdd adds URL instead of changing it
-func SetRemoteURLWithAdd() Option {
+func SetRemoteURLWithAdd() gitpkg.Option {
 	return WithArgs("--add")
 }
 
 // SetRemoteURLWithDelete deletes URL instead of changing it
-func SetRemoteURLWithDelete() Option {
+func SetRemoteURLWithDelete() gitpkg.Option {
 	return WithArgs("--delete")
 }
 
 // RemoteAddWithTags imports tags from the remote
-func RemoteAddWithTags() Option {
+func RemoteAddWithTags() gitpkg.Option {
 	return WithArgs("--tags")
 }
 
 // RemoteAddWithNoTags doesn't import tags from the remote
-func RemoteAddWithNoTags() Option {
+func RemoteAddWithNoTags() gitpkg.Option {
 	return WithArgs("--no-tags")
 }
 
 // RemoteAddWithMirror sets up mirroring mode
-func RemoteAddWithMirror(mode string) Option {
+func RemoteAddWithMirror(mode string) gitpkg.Option {
 	if mode == "" {
 		return WithArgs("--mirror")
 	}

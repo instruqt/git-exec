@@ -1,12 +1,13 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 // Merge joins two or more development histories together
-func (g *git) Merge(opts ...Option) error {
+func (g *git) Merge(opts ...gitpkg.Option) error {
 	// TODO: implement - currently has basic placeholder implementation
 	cmd := g.newCommand("merge")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
@@ -15,102 +16,102 @@ func (g *git) Merge(opts ...Option) error {
 // Merge-specific options
 
 // MergeWithBranch merges the specified branch
-func MergeWithBranch(branch string) Option {
+func MergeWithBranch(branch string) gitpkg.Option {
 	return WithArgs(branch)
 }
 
 // MergeWithCommit merges commits into current branch
-func MergeWithCommit(commit string) Option {
+func MergeWithCommit(commit string) gitpkg.Option {
 	return WithArgs(commit)
 }
 
 // MergeWithNoFF creates a merge commit even when fast-forward is possible
-func MergeWithNoFF() Option {
+func MergeWithNoFF() gitpkg.Option {
 	return WithArgs("--no-ff")
 }
 
 // MergeWithFFOnly only updates if the merge can be resolved as fast-forward
-func MergeWithFFOnly() Option {
+func MergeWithFFOnly() gitpkg.Option {
 	return WithArgs("--ff-only")
 }
 
 // MergeWithSquash creates a single commit instead of merging
-func MergeWithSquash() Option {
+func MergeWithSquash() gitpkg.Option {
 	return WithArgs("--squash")
 }
 
 // MergeWithStrategy specifies merge strategy
-func MergeWithStrategy(strategy string) Option {
+func MergeWithStrategy(strategy string) gitpkg.Option {
 	return WithArgs("--strategy", strategy)
 }
 
 // MergeWithStrategyOption passes option to merge strategy
-func MergeWithStrategyOption(option string) Option {
+func MergeWithStrategyOption(option string) gitpkg.Option {
 	return WithArgs("--strategy-option", option)
 }
 
 // MergeWithEdit invokes editor to edit merge commit message
-func MergeWithEdit() Option {
+func MergeWithEdit() gitpkg.Option {
 	return WithArgs("--edit")
 }
 
 // MergeWithNoEdit accepts auto-generated message
-func MergeWithNoEdit() Option {
+func MergeWithNoEdit() gitpkg.Option {
 	return WithArgs("--no-edit")
 }
 
 // MergeWithMessage specifies merge commit message
-func MergeWithMessage(message string) Option {
+func MergeWithMessage(message string) gitpkg.Option {
 	return WithArgs("-m", message)
 }
 
 // MergeWithFile reads merge message from file
-func MergeWithFile(file string) Option {
+func MergeWithFile(file string) gitpkg.Option {
 	return WithArgs("-F", file)
 }
 
 // MergeWithAbort aborts current merge and restores pre-merge state
-func MergeWithAbort() Option {
+func MergeWithAbort() gitpkg.Option {
 	return WithArgs("--abort")
 }
 
 // MergeWithContinue continues merge after resolving conflicts
-func MergeWithContinue() Option {
+func MergeWithContinue() gitpkg.Option {
 	return WithArgs("--continue")
 }
 
 // MergeWithQuiet suppresses output
-func MergeWithQuiet() Option {
+func MergeWithQuiet() gitpkg.Option {
 	return WithArgs("--quiet")
 }
 
 // MergeWithVerbose shows verbose output
-func MergeWithVerbose() Option {
+func MergeWithVerbose() gitpkg.Option {
 	return WithArgs("--verbose")
 }
 
 // MergeWithProgress shows progress
-func MergeWithProgress() Option {
+func MergeWithProgress() gitpkg.Option {
 	return WithArgs("--progress")
 }
 
 // MergeWithNoProgress hides progress
-func MergeWithNoProgress() Option {
+func MergeWithNoProgress() gitpkg.Option {
 	return WithArgs("--no-progress")
 }
 
 // MergeWithSign makes a GPG-signed merge commit
-func MergeWithSign() Option {
+func MergeWithSign() gitpkg.Option {
 	return WithArgs("--gpg-sign")
 }
 
 // MergeWithNoSign doesn't GPG-sign merge commit
-func MergeWithNoSign() Option {
+func MergeWithNoSign() gitpkg.Option {
 	return WithArgs("--no-gpg-sign")
 }
 
 // MergeWithLog includes one-line descriptions from merged commits
-func MergeWithLog(n string) Option {
+func MergeWithLog(n string) gitpkg.Option {
 	if n == "" {
 		return WithArgs("--log")
 	}
@@ -118,16 +119,16 @@ func MergeWithLog(n string) Option {
 }
 
 // MergeWithNoLog doesn't include one-line descriptions
-func MergeWithNoLog() Option {
+func MergeWithNoLog() gitpkg.Option {
 	return WithArgs("--no-log")
 }
 
 // MergeWithStat shows diffstat at end of merge
-func MergeWithStat() Option {
+func MergeWithStat() gitpkg.Option {
 	return WithArgs("--stat")
 }
 
 // MergeWithNoStat doesn't show diffstat
-func MergeWithNoStat() Option {
+func MergeWithNoStat() gitpkg.Option {
 	return WithArgs("--no-stat")
 }

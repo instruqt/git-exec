@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
+	gitpkg "github.com/instruqt/git-exec/pkg/git"
 	"github.com/instruqt/git-exec/pkg/git/errors"
 )
 
-// Command represents a git command to be executed
-type Command struct {
+// command represents a git command to be executed
+type command struct {
 	gitPath     string
 	args        []string
 	workingDir  string
@@ -23,12 +24,9 @@ type Command struct {
 	noStderr    bool // Some commands write normal output to stderr (e.g., fetch)
 }
 
-// Option is a functional option for configuring git commands
-type Option func(*Command)
-
 // newCommand creates a new command with the given git operation
-func (g *git) newCommand(operation string, args ...string) *Command {
-	cmd := &Command{
+func (g *git) newCommand(operation string, args ...string) gitpkg.Command {
+	cmd := &command{
 		gitPath:    g.path,
 		args:       append([]string{operation}, args...),
 		workingDir: g.wd,
@@ -39,7 +37,7 @@ func (g *git) newCommand(operation string, args ...string) *Command {
 }
 
 // Execute runs the git command and returns the output
-func (c *Command) Execute() ([]byte, error) {
+func (c *command) Execute() ([]byte, error) {
 	ctx := context.Background()
 	if c.timeout > 0 {
 		var cancel context.CancelFunc
@@ -96,7 +94,7 @@ func (c *Command) Execute() ([]byte, error) {
 }
 
 // ExecuteCombined runs the git command and returns combined stdout and stderr
-func (c *Command) ExecuteCombined() ([]byte, error) {
+func (c *command) ExecuteCombined() ([]byte, error) {
 	ctx := context.Background()
 	if c.timeout > 0 {
 		var cancel context.CancelFunc
@@ -140,98 +138,126 @@ func (c *Command) ExecuteCombined() ([]byte, error) {
 	return output, nil
 }
 
-// Apply applies all options to the command
-func (c *Command) applyOptions(opts ...Option) {
+// ApplyOptions applies all options to the command
+func (c *command) ApplyOptions(opts ...gitpkg.Option) {
 	for _, opt := range opts {
 		opt(c)
 	}
 }
 
-// Helper function to parse git command output that may be on stderr
-func (c *Command) executeWithStderr() ([]byte, error) {
-	c.noStderr = true
-	return c.Execute()
+// String returns the command as it would be executed
+func (c *command) String() string {
+	return fmt.Sprintf("%s %s", c.gitPath, strings.Join(c.args, " "))
 }
 
-// String returns the command as it would be executed
-func (c *Command) String() string {
-	return fmt.Sprintf("%s %s", c.gitPath, strings.Join(c.args, " "))
+// Interface method implementations for option configuration
+func (c *command) SetTimeout(timeout time.Duration) {
+	c.timeout = timeout
+}
+
+func (c *command) SetEnv(key, value string) {
+	c.env[key] = value
+}
+
+func (c *command) SetWorkingDir(dir string) {
+	c.workingDir = dir
+}
+
+func (c *command) SetStdin(input string) {
+	c.stdin = bytes.NewBufferString(input)
+}
+
+func (c *command) AddArgs(args ...string) {
+	c.args = append(c.args, args...)
+}
+
+func (c *command) GetArgs() []string {
+	return c.args
+}
+
+func (c *command) SetArgs(args []string) {
+	c.args = args
+}
+
+func (c *command) ExecuteWithStderr() ([]byte, error) {
+	c.noStderr = true
+	return c.Execute()
 }
 
 // Generic Options that apply to all commands
 
 // WithTimeout sets a custom timeout for the command
-func WithTimeout(timeout time.Duration) Option {
-	return func(c *Command) {
-		c.timeout = timeout
+func WithTimeout(timeout time.Duration) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.SetTimeout(timeout)
 	}
 }
 
 // WithEnv sets an environment variable for the command
-func WithEnv(key, value string) Option {
-	return func(c *Command) {
-		c.env[key] = value
+func WithEnv(key, value string) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.SetEnv(key, value)
 	}
 }
 
 // WithWorkingDirectory sets the working directory for the command
-func WithWorkingDirectory(dir string) Option {
-	return func(c *Command) {
-		c.workingDir = dir
+func WithWorkingDirectory(dir string) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.SetWorkingDir(dir)
 	}
 }
 
 // WithStdin sets the stdin for the command
-func WithStdin(input string) Option {
-	return func(c *Command) {
-		c.stdin = bytes.NewBufferString(input)
+func WithStdin(input string) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.SetStdin(input)
 	}
 }
 
 // WithAuth sets authentication for remote operations
 // This is generic enough to be used by multiple commands (clone, fetch, push, pull)
-func WithAuth(token string) Option {
-	return func(c *Command) {
+func WithAuth(token string) gitpkg.Option {
+	return func(c gitpkg.Command) {
 		// Use the token as a bearer token in the Authorization header
 		// This is typically done via GIT_ASKPASS or credential helpers
-		c.env["GIT_ASKPASS"] = "echo"
-		c.env["GIT_TERMINAL_PROMPT"] = "0"
+		c.SetEnv("GIT_ASKPASS", "echo")
+		c.SetEnv("GIT_TERMINAL_PROMPT", "0")
 		
 		// For GitHub token auth, we can use the token directly
 		// This would need to be handled differently based on the remote URL
 		// For now, we'll set it as an environment variable that could be used
 		// by a credential helper
-		c.env["GITHUB_TOKEN"] = token
+		c.SetEnv("GITHUB_TOKEN", token)
 	}
 }
 
 // WithUser sets the user for commits (used by multiple commands like commit, merge, etc.)
-func WithUser(name, email string) Option {
-	return func(c *Command) {
-		c.env["GIT_AUTHOR_NAME"] = name
-		c.env["GIT_AUTHOR_EMAIL"] = email
-		c.env["GIT_COMMITTER_NAME"] = name
-		c.env["GIT_COMMITTER_EMAIL"] = email
+func WithUser(name, email string) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.SetEnv("GIT_AUTHOR_NAME", name)
+		c.SetEnv("GIT_AUTHOR_EMAIL", email)
+		c.SetEnv("GIT_COMMITTER_NAME", name)
+		c.SetEnv("GIT_COMMITTER_EMAIL", email)
 	}
 }
 
 // WithQuiet adds the -q/--quiet flag (common across many commands)
-func WithQuiet() Option {
-	return func(c *Command) {
-		c.args = append(c.args, "--quiet")
+func WithQuiet() gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.AddArgs("--quiet")
 	}
 }
 
 // WithVerbose adds the -v/--verbose flag (common across many commands)
-func WithVerbose() Option {
-	return func(c *Command) {
-		c.args = append(c.args, "--verbose")
+func WithVerbose() gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.AddArgs("--verbose")
 	}
 }
 
 // WithArgs adds arbitrary arguments to the command (escape hatch for unsupported options)
-func WithArgs(args ...string) Option {
-	return func(c *Command) {
-		c.args = append(c.args, args...)
+func WithArgs(args ...string) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		c.AddArgs(args...)
 	}
 }

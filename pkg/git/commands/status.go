@@ -1,4 +1,5 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 import (
 	"strings"
@@ -7,11 +8,11 @@ import (
 )
 
 // Status shows the working tree status
-func (g *git) Status(opts ...Option) ([]types.File, error) {
+func (g *git) Status(opts ...gitpkg.Option) ([]types.File, error) {
 	cmd := g.newCommand("status", "--porcelain")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	output, err := cmd.Execute()
 	if err != nil {
@@ -75,41 +76,41 @@ func (g *git) Status(opts ...Option) ([]types.File, error) {
 // Status-specific options
 
 // StatusWithShort gives output in short format
-func StatusWithShort() Option {
+func StatusWithShort() gitpkg.Option {
 	return WithArgs("--short")
 }
 
 // StatusWithBranch shows branch information
-func StatusWithBranch() Option {
+func StatusWithBranch() gitpkg.Option {
 	return WithArgs("--branch")
 }
 
 // StatusWithPorcelain gives porcelain output (default for this implementation)
-func StatusWithPorcelain() Option {
+func StatusWithPorcelain() gitpkg.Option {
 	return WithArgs("--porcelain")
 }
 
 // StatusWithLong gives output in long format (default Git behavior)
-func StatusWithLong() Option {
+func StatusWithLong() gitpkg.Option {
 	return WithArgs("--long")
 }
 
 // StatusWithShowStash shows stash information
-func StatusWithShowStash() Option {
+func StatusWithShowStash() gitpkg.Option {
 	return WithArgs("--show-stash")
 }
 
 // StatusWithAheadBehind shows ahead/behind counts
-func StatusWithAheadBehind() Option {
+func StatusWithAheadBehind() gitpkg.Option {
 	return WithArgs("--ahead-behind")
 }
 
 // StatusWithUntrackedFiles controls how untracked files are shown
-func StatusWithUntrackedFiles(mode string) Option {
+func StatusWithUntrackedFiles(mode string) gitpkg.Option {
 	return WithArgs("--untracked-files=" + mode)
 }
 
 // StatusWithIgnoredFiles shows ignored files
-func StatusWithIgnoredFiles() Option {
+func StatusWithIgnoredFiles() gitpkg.Option {
 	return WithArgs("--ignored")
 }

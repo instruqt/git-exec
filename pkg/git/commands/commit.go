@@ -1,14 +1,16 @@
 package commands
 
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
+
 // Commit creates a new commit with the given message
-func (g *git) Commit(message string, opts ...Option) error {
+func (g *git) Commit(message string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("commit", "-m", message)
 	
 	// Apply quiet by default
-	cmd.args = append(cmd.args, "-q")
+	cmd.AddArgs("-q")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
@@ -17,42 +19,42 @@ func (g *git) Commit(message string, opts ...Option) error {
 // Commit-specific options
 
 // CommitWithAuthor sets the author for the commit (alias for WithUser)
-func CommitWithAuthor(name, email string) Option {
+func CommitWithAuthor(name, email string) gitpkg.Option {
 	return WithUser(name, email)
 }
 
 // CommitWithAll automatically stages all modified and deleted files
-func CommitWithAll() Option {
+func CommitWithAll() gitpkg.Option {
 	return WithArgs("--all")
 }
 
 // CommitWithAmend replaces the tip of the current branch
-func CommitWithAmend() Option {
+func CommitWithAmend() gitpkg.Option {
 	return WithArgs("--amend")
 }
 
 // CommitWithNoEdit uses the previous commit message without launching an editor
-func CommitWithNoEdit() Option {
+func CommitWithNoEdit() gitpkg.Option {
 	return WithArgs("--no-edit")
 }
 
 // CommitWithAllowEmpty allows creating a commit with no changes
-func CommitWithAllowEmpty() Option {
+func CommitWithAllowEmpty() gitpkg.Option {
 	return WithArgs("--allow-empty")
 }
 
 // CommitWithAllowEmptyMessage allows a commit with an empty message
-func CommitWithAllowEmptyMessage() Option {
+func CommitWithAllowEmptyMessage() gitpkg.Option {
 	return WithArgs("--allow-empty-message")
 }
 
 // CommitWithSignoff adds a Signed-off-by line
-func CommitWithSignoff() Option {
+func CommitWithSignoff() gitpkg.Option {
 	return WithArgs("--signoff")
 }
 
 // CommitWithGPGSign signs the commit with GPG
-func CommitWithGPGSign(keyid string) Option {
+func CommitWithGPGSign(keyid string) gitpkg.Option {
 	if keyid == "" {
 		return WithArgs("--gpg-sign")
 	}
@@ -60,6 +62,6 @@ func CommitWithGPGSign(keyid string) Option {
 }
 
 // CommitWithNoVerify bypasses pre-commit and commit-msg hooks
-func CommitWithNoVerify() Option {
+func CommitWithNoVerify() gitpkg.Option {
 	return WithArgs("--no-verify")
 }

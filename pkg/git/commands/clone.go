@@ -1,16 +1,20 @@
 package commands
 
-import "fmt"
+import (
+	"fmt"
+	
+	gitpkg "github.com/instruqt/git-exec/pkg/git"
+)
 
 // Clone clones a repository to a destination path
-func (g *git) Clone(url, destination string, opts ...Option) error {
+func (g *git) Clone(url, destination string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("clone", url, destination)
 	
 	// Apply quiet by default
-	cmd.args = append(cmd.args, "-q")
+	cmd.AddArgs("-q")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
@@ -19,51 +23,51 @@ func (g *git) Clone(url, destination string, opts ...Option) error {
 // Clone-specific options
 
 // CloneWithBare adds the --bare flag for bare repository clones
-func CloneWithBare() Option {
+func CloneWithBare() gitpkg.Option {
 	return WithArgs("--bare")
 }
 
 // CloneWithBranch specifies which branch to clone
-func CloneWithBranch(branch string) Option {
+func CloneWithBranch(branch string) gitpkg.Option {
 	return WithArgs("--branch", branch)
 }
 
 // CloneWithDepth creates a shallow clone with history truncated to the specified number of commits
-func CloneWithDepth(depth int) Option {
+func CloneWithDepth(depth int) gitpkg.Option {
 	return WithArgs("--depth", fmt.Sprintf("%d", depth))
 }
 
 // CloneWithSingleBranch clones only the history leading to the tip of a single branch
-func CloneWithSingleBranch() Option {
+func CloneWithSingleBranch() gitpkg.Option {
 	return WithArgs("--single-branch")
 }
 
 // CloneWithNoCheckout performs a clone without checking out a working tree
-func CloneWithNoCheckout() Option {
+func CloneWithNoCheckout() gitpkg.Option {
 	return WithArgs("--no-checkout")
 }
 
 // CloneWithRecurseSubmodules initializes and clones submodules recursively
-func CloneWithRecurseSubmodules() Option {
+func CloneWithRecurseSubmodules() gitpkg.Option {
 	return WithArgs("--recurse-submodules")
 }
 
 // CloneWithShallow creates a shallow clone (depth 1)
-func CloneWithShallow() Option {
+func CloneWithShallow() gitpkg.Option {
 	return CloneWithDepth(1)
 }
 
 // CloneWithMirror sets up the clone as a mirror (implies --bare)
-func CloneWithMirror() Option {
+func CloneWithMirror() gitpkg.Option {
 	return WithArgs("--mirror")
 }
 
 // CloneWithReference uses a local repository as a reference to reduce network transfer
-func CloneWithReference(repo string) Option {
+func CloneWithReference(repo string) gitpkg.Option {
 	return WithArgs("--reference", repo)
 }
 
 // CloneWithConfig sets a configuration variable in the newly created clone
-func CloneWithConfig(key, value string) Option {
+func CloneWithConfig(key, value string) gitpkg.Option {
 	return WithArgs("--config", fmt.Sprintf("%s=%s", key, value))
 }
