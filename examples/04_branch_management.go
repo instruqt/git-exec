@@ -34,11 +34,11 @@ func main() {
 	gitInstance.SetWorkingDirectory(repoPath)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Branch Example")
+	err = gitInstance.SetConfig("user.name", "Branch Example")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = gitInstance.Config("user.email", "branch@example.com")
+	err = gitInstance.SetConfig("user.email", "branch@example.com")
 	if err != nil {
 		log.Fatal(err)
 	}

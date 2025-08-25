@@ -548,3 +548,30 @@ func InitWithSharedRepo(permissions string) Option {
 	return WithArgs("--shared=" + permissions)
 }
 
+// Config-specific options
+
+// ConfigWithLocalScope operates on repository-specific config
+func ConfigWithLocalScope() Option {
+	return WithArgs("--local")
+}
+
+// ConfigWithGlobalScope operates on user-specific config
+func ConfigWithGlobalScope() Option {
+	return WithArgs("--global")
+}
+
+// ConfigWithSystemScope operates on system-wide config
+func ConfigWithSystemScope() Option {
+	return WithArgs("--system")
+}
+
+// ConfigWithAllScopes lists config from all scopes (for ListConfig)
+func ConfigWithAllScopes() Option {
+	return WithArgs("--show-scope")
+}
+
+// ConfigWithShowOrigin shows the origin file for each config (for ListConfig)
+func ConfigWithShowOrigin() Option {
+	return WithArgs("--show-origin")
+}
+

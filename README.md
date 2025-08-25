@@ -45,12 +45,12 @@ func main() {
     gitInstance.SetWorkingDirectory("/path/to/repo")
     
     // Configure user
-    err = gitInstance.Config("user.name", "Your Name")
+    err = gitInstance.SetConfig("user.name", "Your Name")
     if err != nil {
         log.Fatal(err)
     }
     
-    err = gitInstance.Config("user.email", "you@example.com")
+    err = gitInstance.SetConfig("user.email", "you@example.com")
     if err != nil {
         log.Fatal(err)
     }
@@ -299,6 +299,82 @@ if !result.Success && len(result.Conflicts) > 0 {
     }
     
     fmt.Println("Merge completed successfully")
+}
+```
+
+### Configuration Management
+
+Complete git configuration management with support for getting, setting, listing, and unsetting config values across different scopes.
+
+```go
+// Set configuration values
+err = gitInstance.SetConfig("user.name", "John Doe")
+if err != nil {
+    log.Fatal(err)
+}
+
+err = gitInstance.SetConfig("user.email", "john@example.com")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Get configuration values
+name, err := gitInstance.GetConfig("user.name")
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("User name: %s\n", name)
+
+// List all configuration entries
+configs, err := gitInstance.ListConfig()
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, config := range configs {
+    fmt.Printf("%s=%s (scope: %s, source: %s)\n", 
+        config.Key, config.Value, config.Scope, config.Source)
+}
+
+// Unset a configuration value
+err = gitInstance.UnsetConfig("user.nickname")
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+#### Configuration Scopes
+
+Work with different configuration scopes (local, global, system):
+
+```go
+// Set local repository config
+err = gitInstance.SetConfig("core.autocrlf", "false", git.ConfigWithLocalScope())
+if err != nil {
+    log.Fatal(err)
+}
+
+// Set global user config  
+err = gitInstance.SetConfig("user.name", "John Doe", git.ConfigWithGlobalScope())
+if err != nil {
+    log.Fatal(err)
+}
+
+// Get config from specific scope
+email, err := gitInstance.GetConfig("user.email", git.ConfigWithGlobalScope())
+if err != nil {
+    log.Fatal(err)
+}
+
+// List configs with scope and origin information
+configs, err := gitInstance.ListConfig(git.ConfigWithAllScopes(), git.ConfigWithShowOrigin())
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, config := range configs {
+    fmt.Printf("[%s] %s=%s (from %s)\n", 
+        config.Scope, config.Key, config.Value, config.Source)
 }
 ```
 

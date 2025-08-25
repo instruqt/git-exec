@@ -234,14 +234,17 @@ func TestConfigCommand(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 	
 	// Set configuration
-	err = gitInstance.Config("test.key", "test-value")
+	err = gitInstance.SetConfig("test.key", "test-value")
 	require.NoError(t, err)
 	
-	// Verify config was set (we can't easily read it back with current interface,
-	// but we can test that it doesn't error)
-	err = gitInstance.Config("user.name", "Config Test User")
+	// Verify config was set - now we can read it back!
+	value, err := gitInstance.GetConfig("test.key")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "config@test.com")
+	require.Equal(t, "test-value", value)
+	
+	err = gitInstance.SetConfig("user.name", "Config Test User")
+	require.NoError(t, err)
+	err = gitInstance.SetConfig("user.email", "config@test.com")
 	require.NoError(t, err)
 	
 	// Test that commit works with configured user

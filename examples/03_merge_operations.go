@@ -35,11 +35,11 @@ func main() {
 	gitInstance.SetWorkingDirectory(repoPath)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Merge Example")
+	err = gitInstance.SetConfig("user.name", "Merge Example")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = gitInstance.Config("user.email", "merge@example.com")
+	err = gitInstance.SetConfig("user.email", "merge@example.com")
 	if err != nil {
 		log.Fatal(err)
 	}

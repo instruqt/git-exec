@@ -75,9 +75,9 @@ func TestTagEdgeCases(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 	
 	// Configure user
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 	
 	// Test listing tags in empty repository

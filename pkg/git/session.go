@@ -31,7 +31,7 @@ type Session interface {
 	Git
 	
 	// Session-specific methods
-	GetConfig() *SessionConfig
+	GetSessionConfig() *SessionConfig
 	UpdateUser(name, email string) error
 	GetSessionID() string
 	GetUserID() string
@@ -197,7 +197,7 @@ func ValidateSession(sessionPath string) error {
 		return fmt.Errorf("session is not valid")
 	}
 	
-	config := s.GetConfig()
+	config := s.GetSessionConfig()
 	if config.SessionID == "" {
 		return fmt.Errorf("session ID is missing")
 	}
@@ -212,11 +212,11 @@ func GetSessionInfo(sessionPath string) (*SessionConfig, error) {
 		return nil, fmt.Errorf("failed to load session: %w", err)
 	}
 	
-	return s.GetConfig(), nil
+	return s.GetSessionConfig(), nil
 }
 
-// GetConfig returns the session configuration
-func (s *sessionImpl) GetConfig() *SessionConfig {
+// GetSessionConfig returns the session configuration
+func (s *sessionImpl) GetSessionConfig() *SessionConfig {
 	return s.config
 }
 

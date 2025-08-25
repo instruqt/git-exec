@@ -19,16 +19,21 @@ The library needs specific handling for bare repository operations:
 
 The following commands have basic implementations but could be enhanced:
 
-#### Config Command
-- **Get Operations**: `Config()` currently only supports set operations
-- **List All Configs**: Ability to retrieve all git configuration
-- **Scoped Config**: Support for --global, --local, --system scopes
-- **Unset Operations**: Remove configuration values
+#### ~~Config Command~~ ✅
+- ✅ **Enhanced API**: Replaced `Config()` with `SetConfig()`, `GetConfig()`, `ListConfig()`, and `UnsetConfig()`
+- ✅ **Get Operations**: Full support for reading configuration values
+- ✅ **List All Configs**: Complete config listing with structured output (`ConfigEntry` type)
+- ✅ **Scoped Config**: Support for --global, --local, --system scopes via `ConfigWithLocalScope()`, `ConfigWithGlobalScope()`, etc.
+- ✅ **Unset Operations**: Remove configuration values with `UnsetConfig()`
+- ✅ **Structured Output**: `ConfigEntry` type with Key, Value, Scope, and Source information
+- ✅ **Configuration Options**: `ConfigWithShowOrigin()`, `ConfigWithAllScopes()` for enhanced listing
 
-#### Checkout Command  
-- **Enhanced Parsing**: Better output parsing for checkout results
-- **File-specific Checkout**: Checkout specific files from commits
-- **Orphan Branch Support**: Better support for `--orphan` branches
+#### ~~Checkout Command~~ ✅  
+- ✅ **Enhanced Parsing**: Complete output parsing with `CheckoutResult` struct
+- ✅ **Structured Output**: Detailed checkout information (success, branch, HEAD changes, file modifications, warnings)
+- ✅ **Orphan Branch Support**: Full support for `--orphan` branches with proper detection
+- ✅ **Detached HEAD Detection**: Automatic detection and handling of detached HEAD states
+- **File-specific Checkout**: Checkout specific files from commits (not yet implemented)
 
 #### Advanced Commands
 - **Revert**: Enhanced revert operations with conflict handling
@@ -64,8 +69,8 @@ The following commands have basic implementations but could be enhanced:
 
 ### High Priority
 1. **Bare Repository Support** - Critical for server-side Git operations
-2. **Config Command Enhancement** - Complete the configuration management API
-3. **Checkout Parsing** - Better feedback from checkout operations
+2. ✅ ~~**Config Command Enhancement**~~ - Complete the configuration management API ✅
+3. ✅ ~~**Checkout Parsing**~~ - Better feedback from checkout operations ✅
 
 ### Medium Priority
 1. **Advanced Authentication** - Credential helper integration

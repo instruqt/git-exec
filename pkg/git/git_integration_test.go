@@ -25,9 +25,9 @@ func TestGitWorkflow(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 	
 	// Configure user (required for commits)
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 	
 	// Create and add a file
@@ -216,9 +216,9 @@ func setupTestRepo(t *testing.T) string {
 	
 	gitInstance.SetWorkingDirectory(tempDir)
 	
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 	
 	// Create initial commit
