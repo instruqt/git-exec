@@ -19,8 +19,6 @@ The library needs specific handling for bare repository operations:
 
 The following commands have basic implementations but could be enhanced:
 
-#### Checkout Command
-- **File-specific Checkout**: Checkout specific files from commits
 
 #### Advanced Commands
 - **Revert**: Enhanced revert operations with conflict handling
