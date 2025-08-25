@@ -381,6 +381,61 @@ for _, config := range configs {
 }
 ```
 
+### Bare Repository Support
+
+The library provides full support for bare repositories, commonly used for server-side Git operations:
+
+```go
+// Create a bare repository
+err := gitInstance.Init("/path/to/repo.git", git.InitWithBare())
+if err != nil {
+    log.Fatal(err)
+}
+
+// Clone as bare repository
+err = gitInstance.Clone("https://github.com/user/repo.git", "local.git", 
+    git.CloneWithBare())
+if err != nil {
+    log.Fatal(err)
+}
+
+// Check if repository is bare
+isBare, err := gitInstance.IsBareRepository()
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Repository is bare: %v\n", isBare)
+
+// Reference management in bare repositories
+refs, err := gitInstance.ListRefs()
+if err != nil {
+    log.Fatal(err)
+}
+
+for _, ref := range refs {
+    fmt.Printf("%s (%s) -> %s\n", ref.Name, ref.Type, ref.Commit)
+}
+
+// Create a new reference
+err = gitInstance.UpdateRef("refs/heads/feature", "abc123def")
+if err != nil {
+    log.Fatal(err)
+}
+
+// Delete a reference
+err = gitInstance.DeleteRef("refs/heads/old-branch")
+if err != nil {
+    log.Fatal(err)
+}
+```
+
+Reference types are strongly typed:
+- `ReferenceTypeBranch` - Local branches (refs/heads/*)
+- `ReferenceTypeTag` - Tags (refs/tags/*)
+- `ReferenceTypeRemote` - Remote branches (refs/remotes/*)
+- `ReferenceTypeNote` - Notes (refs/notes/*)
+- `ReferenceTypeOther` - Other reference types
+
 ## Testing
 
 Run tests:
