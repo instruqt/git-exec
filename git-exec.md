@@ -8,7 +8,7 @@ Git-exec is a Go library that provides a clean, type-safe wrapper around the Git
 
 The git-exec library has a **modern, production-ready architecture** with the following features:
 
-### ✅ Completed Features
+### Completed Features
 
 **Architecture & Infrastructure**:
 - Modern package structure (`pkg/git/`, `pkg/git/commands/`, `pkg/git/types/`, `pkg/git/errors/`)
@@ -27,7 +27,7 @@ The git-exec library has a **modern, production-ready architecture** with the fo
 - **Tag Operations**: Tag, ListTags, DeleteTag, PushTags, DeleteRemoteTag
 - **Advanced Operations**: Merge, Rebase, Revert, Reflog, Config, Remove
 
-### 🚧 Commands with Basic Implementation
+### Commands with Basic Implementation
 
 The following commands have basic structure but need completion:
 - `Merge()` - Has extensive options but needs conflict parsing
@@ -35,7 +35,7 @@ The following commands have basic structure but need completion:
 - `Config()` - Basic implementation, needs get/set logic refinement
 - `Revert()`, `Reflog()`, `Remove()` - Have option definitions but basic execution
 
-### ✅ Recently Implemented
+### Recently Implemented
 
 - **Session Management**: Complete persistent user sessions with `.git/config` storage
   - Smart repository detection (auto-detects existing repos vs new directories)
@@ -47,7 +47,7 @@ The following commands have basic structure but need completion:
   - `WithConfigs()` for multiple config values at once
   - Clean, consistent API: `NewSession()` instead of `NewSessionWithConfig()`
 
-### ❌ Not Yet Implemented
+### Not Yet Implemented
 
 - **Conflict Resolution**: Parsing and handling merge conflicts  
 - **Bare Repository**: Specific handling for bare repository operations
