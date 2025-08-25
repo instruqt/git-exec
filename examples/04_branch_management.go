@@ -50,7 +50,7 @@ func main() {
 import "fmt"
 
 func main() {
-	fmt.Println("Hello, World!")
+	fmt.Println("Git branch management example")
 }
 `
 	err = os.WriteFile(mainFile, []byte(mainContent), 0644)
