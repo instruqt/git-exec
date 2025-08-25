@@ -160,6 +160,23 @@ type ResolvedSection struct {
 	Resolution   string // The resolved content for this section
 }
 
+// ConfigEntry represents a git configuration entry
+type ConfigEntry struct {
+	Key    string      // Configuration key (e.g., "user.name")
+	Value  string      // Configuration value
+	Scope  ConfigScope // Scope where this config is defined
+	Source string      // File path where config is defined
+}
+
+// ConfigScope represents the scope of a git configuration
+type ConfigScope string
+
+const (
+	ConfigScopeLocal  ConfigScope = "local"  // Repository-specific config
+	ConfigScopeGlobal ConfigScope = "global" // User-specific config
+	ConfigScopeSystem ConfigScope = "system" // System-wide config
+)
+
 // CheckoutResult represents the result of a checkout operation
 type CheckoutResult struct {
 	Success          bool     // Whether checkout was successful

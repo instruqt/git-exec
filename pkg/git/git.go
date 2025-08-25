@@ -43,7 +43,10 @@ type Git interface {
 	ResolveConflicts(resolutions []types.ConflictResolution) error
 	Rebase(options ...Option) error
 	Reflog(options ...Option) error
-	Config(key string, value string, options ...Option) error
+	SetConfig(key string, value string, options ...Option) error
+	GetConfig(key string, options ...Option) (string, error)
+	ListConfig(options ...Option) ([]types.ConfigEntry, error)
+	UnsetConfig(key string, options ...Option) error
 	Remove(options ...Option) error
 }
 

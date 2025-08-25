@@ -57,7 +57,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	config := loadedSession.GetConfig()
+	config := loadedSession.GetSessionConfig()
 	fmt.Printf("Loaded session for: %s <%s>\n", config.UserName, config.UserEmail)
 	fmt.Printf("Project: %s, Team: %s\n", config.Metadata["project"], config.Metadata["team"])
 

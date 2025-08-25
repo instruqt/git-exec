@@ -24,9 +24,9 @@ func TestCheckout_BranchSwitching(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 
 	// Create initial commit
@@ -75,9 +75,9 @@ func TestCheckout_CreateNewBranch(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 
 	// Create initial commit
@@ -115,9 +115,9 @@ func TestCheckout_DetachedHEAD(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 
 	// Create initial commit
@@ -162,9 +162,9 @@ func TestCheckout_WithModifiedFiles(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 
 	// Create initial commit
@@ -223,9 +223,9 @@ func TestCheckout_ErrorCases(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 
 	// Create initial commit
@@ -260,9 +260,9 @@ func TestCheckout_WithOrphanBranch(t *testing.T) {
 	gitInstance.SetWorkingDirectory(tempDir)
 
 	// Configure user
-	err = gitInstance.Config("user.name", "Test User")
+	err = gitInstance.SetConfig("user.name", "Test User")
 	require.NoError(t, err)
-	err = gitInstance.Config("user.email", "test@example.com")
+	err = gitInstance.SetConfig("user.email", "test@example.com")
 	require.NoError(t, err)
 
 	// Create initial commit

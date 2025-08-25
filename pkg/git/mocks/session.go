@@ -146,7 +146,7 @@ func (_c *MockSession_AddRemote_Call) RunAndReturn(run func(string, string, ...g
 }
 
 // Checkout provides a mock function with given fields: options
-func (_m *MockSession) Checkout(options ...git.Option) error {
+func (_m *MockSession) Checkout(options ...git.Option) (*types.CheckoutResult, error) {
 	_va := make([]interface{}, len(options))
 	for _i := range options {
 		_va[_i] = options[_i]
@@ -159,14 +159,26 @@ func (_m *MockSession) Checkout(options ...git.Option) error {
 		panic("no return value specified for Checkout")
 	}
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(...git.Option) error); ok {
+	var r0 *types.CheckoutResult
+	var r1 error
+	if rf, ok := ret.Get(0).(func(...git.Option) (*types.CheckoutResult, error)); ok {
+		return rf(options...)
+	}
+	if rf, ok := ret.Get(0).(func(...git.Option) *types.CheckoutResult); ok {
 		r0 = rf(options...)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*types.CheckoutResult)
+		}
 	}
 
-	return r0
+	if rf, ok := ret.Get(1).(func(...git.Option) error); ok {
+		r1 = rf(options...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // MockSession_Checkout_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Checkout'
@@ -194,12 +206,12 @@ func (_c *MockSession_Checkout_Call) Run(run func(options ...git.Option)) *MockS
 	return _c
 }
 
-func (_c *MockSession_Checkout_Call) Return(_a0 error) *MockSession_Checkout_Call {
-	_c.Call.Return(_a0)
+func (_c *MockSession_Checkout_Call) Return(_a0 *types.CheckoutResult, _a1 error) *MockSession_Checkout_Call {
+	_c.Call.Return(_a0, _a1)
 	return _c
 }
 
-func (_c *MockSession_Checkout_Call) RunAndReturn(run func(...git.Option) error) *MockSession_Checkout_Call {
+func (_c *MockSession_Checkout_Call) RunAndReturn(run func(...git.Option) (*types.CheckoutResult, error)) *MockSession_Checkout_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -323,68 +335,6 @@ func (_c *MockSession_Commit_Call) Return(_a0 error) *MockSession_Commit_Call {
 }
 
 func (_c *MockSession_Commit_Call) RunAndReturn(run func(string, ...git.Option) error) *MockSession_Commit_Call {
-	_c.Call.Return(run)
-	return _c
-}
-
-// Config provides a mock function with given fields: key, value, options
-func (_m *MockSession) Config(key string, value string, options ...git.Option) error {
-	_va := make([]interface{}, len(options))
-	for _i := range options {
-		_va[_i] = options[_i]
-	}
-	var _ca []interface{}
-	_ca = append(_ca, key, value)
-	_ca = append(_ca, _va...)
-	ret := _m.Called(_ca...)
-
-	if len(ret) == 0 {
-		panic("no return value specified for Config")
-	}
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, ...git.Option) error); ok {
-		r0 = rf(key, value, options...)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// MockSession_Config_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Config'
-type MockSession_Config_Call struct {
-	*mock.Call
-}
-
-// Config is a helper method to define mock.On call
-//   - key string
-//   - value string
-//   - options ...git.Option
-func (_e *MockSession_Expecter) Config(key interface{}, value interface{}, options ...interface{}) *MockSession_Config_Call {
-	return &MockSession_Config_Call{Call: _e.mock.On("Config",
-		append([]interface{}{key, value}, options...)...)}
-}
-
-func (_c *MockSession_Config_Call) Run(run func(key string, value string, options ...git.Option)) *MockSession_Config_Call {
-	_c.Call.Run(func(args mock.Arguments) {
-		variadicArgs := make([]git.Option, len(args)-2)
-		for i, a := range args[2:] {
-			if a != nil {
-				variadicArgs[i] = a.(git.Option)
-			}
-		}
-		run(args[0].(string), args[1].(string), variadicArgs...)
-	})
-	return _c
-}
-
-func (_c *MockSession_Config_Call) Return(_a0 error) *MockSession_Config_Call {
-	_c.Call.Return(_a0)
-	return _c
-}
-
-func (_c *MockSession_Config_Call) RunAndReturn(run func(string, string, ...git.Option) error) *MockSession_Config_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -821,12 +771,83 @@ func (_c *MockSession_Fetch_Call) RunAndReturn(run func(...git.Option) ([]types.
 	return _c
 }
 
-// GetConfig provides a mock function with no fields
-func (_m *MockSession) GetConfig() *git.SessionConfig {
-	ret := _m.Called()
+// GetConfig provides a mock function with given fields: key, options
+func (_m *MockSession) GetConfig(key string, options ...git.Option) (string, error) {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, key)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetConfig")
+	}
+
+	var r0 string
+	var r1 error
+	if rf, ok := ret.Get(0).(func(string, ...git.Option) (string, error)); ok {
+		return rf(key, options...)
+	}
+	if rf, ok := ret.Get(0).(func(string, ...git.Option) string); ok {
+		r0 = rf(key, options...)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	if rf, ok := ret.Get(1).(func(string, ...git.Option) error); ok {
+		r1 = rf(key, options...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockSession_GetConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetConfig'
+type MockSession_GetConfig_Call struct {
+	*mock.Call
+}
+
+// GetConfig is a helper method to define mock.On call
+//   - key string
+//   - options ...git.Option
+func (_e *MockSession_Expecter) GetConfig(key interface{}, options ...interface{}) *MockSession_GetConfig_Call {
+	return &MockSession_GetConfig_Call{Call: _e.mock.On("GetConfig",
+		append([]interface{}{key}, options...)...)}
+}
+
+func (_c *MockSession_GetConfig_Call) Run(run func(key string, options ...git.Option)) *MockSession_GetConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]git.Option, len(args)-1)
+		for i, a := range args[1:] {
+			if a != nil {
+				variadicArgs[i] = a.(git.Option)
+			}
+		}
+		run(args[0].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockSession_GetConfig_Call) Return(_a0 string, _a1 error) *MockSession_GetConfig_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockSession_GetConfig_Call) RunAndReturn(run func(string, ...git.Option) (string, error)) *MockSession_GetConfig_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// GetSessionConfig provides a mock function with no fields
+func (_m *MockSession) GetSessionConfig() *git.SessionConfig {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetSessionConfig")
 	}
 
 	var r0 *git.SessionConfig
@@ -841,29 +862,29 @@ func (_m *MockSession) GetConfig() *git.SessionConfig {
 	return r0
 }
 
-// MockSession_GetConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetConfig'
-type MockSession_GetConfig_Call struct {
+// MockSession_GetSessionConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'GetSessionConfig'
+type MockSession_GetSessionConfig_Call struct {
 	*mock.Call
 }
 
-// GetConfig is a helper method to define mock.On call
-func (_e *MockSession_Expecter) GetConfig() *MockSession_GetConfig_Call {
-	return &MockSession_GetConfig_Call{Call: _e.mock.On("GetConfig")}
+// GetSessionConfig is a helper method to define mock.On call
+func (_e *MockSession_Expecter) GetSessionConfig() *MockSession_GetSessionConfig_Call {
+	return &MockSession_GetSessionConfig_Call{Call: _e.mock.On("GetSessionConfig")}
 }
 
-func (_c *MockSession_GetConfig_Call) Run(run func()) *MockSession_GetConfig_Call {
+func (_c *MockSession_GetSessionConfig_Call) Run(run func()) *MockSession_GetSessionConfig_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		run()
 	})
 	return _c
 }
 
-func (_c *MockSession_GetConfig_Call) Return(_a0 *git.SessionConfig) *MockSession_GetConfig_Call {
+func (_c *MockSession_GetSessionConfig_Call) Return(_a0 *git.SessionConfig) *MockSession_GetSessionConfig_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockSession_GetConfig_Call) RunAndReturn(run func() *git.SessionConfig) *MockSession_GetConfig_Call {
+func (_c *MockSession_GetSessionConfig_Call) RunAndReturn(run func() *git.SessionConfig) *MockSession_GetSessionConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -1176,6 +1197,77 @@ func (_c *MockSession_ListBranches_Call) Return(_a0 []types.Branch, _a1 error) *
 }
 
 func (_c *MockSession_ListBranches_Call) RunAndReturn(run func(...git.Option) ([]types.Branch, error)) *MockSession_ListBranches_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// ListConfig provides a mock function with given fields: options
+func (_m *MockSession) ListConfig(options ...git.Option) ([]types.ConfigEntry, error) {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ListConfig")
+	}
+
+	var r0 []types.ConfigEntry
+	var r1 error
+	if rf, ok := ret.Get(0).(func(...git.Option) ([]types.ConfigEntry, error)); ok {
+		return rf(options...)
+	}
+	if rf, ok := ret.Get(0).(func(...git.Option) []types.ConfigEntry); ok {
+		r0 = rf(options...)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]types.ConfigEntry)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(...git.Option) error); ok {
+		r1 = rf(options...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// MockSession_ListConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListConfig'
+type MockSession_ListConfig_Call struct {
+	*mock.Call
+}
+
+// ListConfig is a helper method to define mock.On call
+//   - options ...git.Option
+func (_e *MockSession_Expecter) ListConfig(options ...interface{}) *MockSession_ListConfig_Call {
+	return &MockSession_ListConfig_Call{Call: _e.mock.On("ListConfig",
+		append([]interface{}{}, options...)...)}
+}
+
+func (_c *MockSession_ListConfig_Call) Run(run func(options ...git.Option)) *MockSession_ListConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]git.Option, len(args)-0)
+		for i, a := range args[0:] {
+			if a != nil {
+				variadicArgs[i] = a.(git.Option)
+			}
+		}
+		run(variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockSession_ListConfig_Call) Return(_a0 []types.ConfigEntry, _a1 error) *MockSession_ListConfig_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *MockSession_ListConfig_Call) RunAndReturn(run func(...git.Option) ([]types.ConfigEntry, error)) *MockSession_ListConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2173,6 +2265,68 @@ func (_c *MockSession_Revert_Call) RunAndReturn(run func(...git.Option) error) *
 	return _c
 }
 
+// SetConfig provides a mock function with given fields: key, value, options
+func (_m *MockSession) SetConfig(key string, value string, options ...git.Option) error {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, key, value)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for SetConfig")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, string, ...git.Option) error); ok {
+		r0 = rf(key, value, options...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockSession_SetConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'SetConfig'
+type MockSession_SetConfig_Call struct {
+	*mock.Call
+}
+
+// SetConfig is a helper method to define mock.On call
+//   - key string
+//   - value string
+//   - options ...git.Option
+func (_e *MockSession_Expecter) SetConfig(key interface{}, value interface{}, options ...interface{}) *MockSession_SetConfig_Call {
+	return &MockSession_SetConfig_Call{Call: _e.mock.On("SetConfig",
+		append([]interface{}{key, value}, options...)...)}
+}
+
+func (_c *MockSession_SetConfig_Call) Run(run func(key string, value string, options ...git.Option)) *MockSession_SetConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]git.Option, len(args)-2)
+		for i, a := range args[2:] {
+			if a != nil {
+				variadicArgs[i] = a.(git.Option)
+			}
+		}
+		run(args[0].(string), args[1].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockSession_SetConfig_Call) Return(_a0 error) *MockSession_SetConfig_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockSession_SetConfig_Call) RunAndReturn(run func(string, string, ...git.Option) error) *MockSession_SetConfig_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // SetRemoteURL provides a mock function with given fields: name, url, options
 func (_m *MockSession) SetRemoteURL(name string, url string, options ...git.Option) error {
 	_va := make([]interface{}, len(options))
@@ -2531,6 +2685,67 @@ func (_c *MockSession_Tag_Call) Return(_a0 error) *MockSession_Tag_Call {
 }
 
 func (_c *MockSession_Tag_Call) RunAndReturn(run func(string, ...git.Option) error) *MockSession_Tag_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UnsetConfig provides a mock function with given fields: key, options
+func (_m *MockSession) UnsetConfig(key string, options ...git.Option) error {
+	_va := make([]interface{}, len(options))
+	for _i := range options {
+		_va[_i] = options[_i]
+	}
+	var _ca []interface{}
+	_ca = append(_ca, key)
+	_ca = append(_ca, _va...)
+	ret := _m.Called(_ca...)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UnsetConfig")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, ...git.Option) error); ok {
+		r0 = rf(key, options...)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// MockSession_UnsetConfig_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UnsetConfig'
+type MockSession_UnsetConfig_Call struct {
+	*mock.Call
+}
+
+// UnsetConfig is a helper method to define mock.On call
+//   - key string
+//   - options ...git.Option
+func (_e *MockSession_Expecter) UnsetConfig(key interface{}, options ...interface{}) *MockSession_UnsetConfig_Call {
+	return &MockSession_UnsetConfig_Call{Call: _e.mock.On("UnsetConfig",
+		append([]interface{}{key}, options...)...)}
+}
+
+func (_c *MockSession_UnsetConfig_Call) Run(run func(key string, options ...git.Option)) *MockSession_UnsetConfig_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		variadicArgs := make([]git.Option, len(args)-1)
+		for i, a := range args[1:] {
+			if a != nil {
+				variadicArgs[i] = a.(git.Option)
+			}
+		}
+		run(args[0].(string), variadicArgs...)
+	})
+	return _c
+}
+
+func (_c *MockSession_UnsetConfig_Call) Return(_a0 error) *MockSession_UnsetConfig_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockSession_UnsetConfig_Call) RunAndReturn(run func(string, ...git.Option) error) *MockSession_UnsetConfig_Call {
 	_c.Call.Return(run)
 	return _c
 }

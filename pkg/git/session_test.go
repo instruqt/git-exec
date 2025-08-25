@@ -26,7 +26,7 @@ func TestSessionPersistence(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Verify session was created and configured
-	config := session.GetConfig()
+	config := session.GetSessionConfig()
 	assert.Equal(t, "Test User", config.UserName)
 	assert.Equal(t, "test@example.com", config.UserEmail)
 	assert.Equal(t, "user-123", config.UserID)
@@ -84,7 +84,7 @@ func TestSessionReload(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Verify configuration was persisted
-	config := session2.GetConfig()
+	config := session2.GetSessionConfig()
 	assert.Equal(t, "Original User", config.UserName)
 	assert.Equal(t, "original@example.com", config.UserEmail)
 	assert.Equal(t, "user-original", config.UserID)
@@ -109,7 +109,7 @@ func TestSessionUserUpdate(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Verify update
-	config := session.GetConfig()
+	config := session.GetSessionConfig()
 	assert.Equal(t, "New User", config.UserName)
 	assert.Equal(t, "new@example.com", config.UserEmail)
 	
