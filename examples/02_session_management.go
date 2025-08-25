@@ -24,9 +24,12 @@ func main() {
 	session, err := git.NewSession(sessionPath,
 		git.SessionWithUser("Alice Developer", "alice@company.com"),
 		git.SessionWithMetadata("user", "id", "user-123"),
+		git.SessionWithMetadata("user", "role", "developer"),
 		git.SessionWithMetadata("session", "id", "session-456"),
 		git.SessionWithMetadata("project", "name", "web-app"),
+		git.SessionWithMetadata("project", "version", "1.0.0"),
 		git.SessionWithMetadata("team", "name", "frontend"),
+		git.SessionWithMetadata("team", "lead", "bob@company.com"),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -60,7 +63,9 @@ func main() {
 
 	loadedConfig := loadedSession.GetSessionConfig()
 	fmt.Printf("Loaded session for: %s <%s>\n", loadedConfig.UserName, loadedConfig.UserEmail)
-	fmt.Printf("Project: %s, Team: %s\n", loadedConfig.Metadata["project.name"], loadedConfig.Metadata["team.name"])
+	fmt.Printf("User ID: %s, Role: %s\n", loadedConfig.Metadata["user.id"], loadedConfig.Metadata["user.role"])
+	fmt.Printf("Project: %s v%s\n", loadedConfig.Metadata["project.name"], loadedConfig.Metadata["project.version"])
+	fmt.Printf("Team: %s (Lead: %s)\n", loadedConfig.Metadata["team.name"], loadedConfig.Metadata["team.lead"])
 
 	// Update user information
 	err = loadedSession.UpdateUser("Alice Smith", "alice.smith@company.com")
