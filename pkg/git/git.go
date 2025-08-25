@@ -1,6 +1,9 @@
 package git
 
 import (
+	"os/exec"
+	"time"
+
 	"github.com/instruqt/git-exec/pkg/git/types"
 )
 
@@ -44,3 +47,50 @@ type Git interface {
 	Remove(options ...Option) error
 }
 
+// Command interface defines the contract for git command execution
+type Command interface {
+	Execute() ([]byte, error)
+	ExecuteCombined() ([]byte, error)
+	ExecuteWithStderr() ([]byte, error)
+	ApplyOptions(opts ...Option)
+	// Internal methods for option configuration
+	SetTimeout(timeout time.Duration)
+	SetEnv(key, value string)
+	SetWorkingDir(dir string)
+	SetStdin(input string)
+	AddArgs(args ...string)
+	// Internal access methods
+	GetArgs() []string
+	SetArgs(args []string)
+}
+
+// Option is a functional option for configuring git commands
+type Option func(Command)
+
+// gitImpl implements the Git interface
+type gitImpl struct {
+	path string
+	wd   string
+}
+
+// NewGit creates a new git implementation
+func NewGit() (*gitImpl, error) {
+	path, err := exec.LookPath("git")
+	if err != nil {
+		return nil, err
+	}
+
+	return &gitImpl{
+		path: path,
+	}, nil
+}
+
+// NewGitInstance creates a new Git instance (basic, no session)
+func NewGitInstance() (Git, error) {
+	return NewGit()
+}
+
+// SetWorkingDirectory sets the working directory for git operations
+func (g *gitImpl) SetWorkingDirectory(wd string) {
+	g.wd = wd
+}

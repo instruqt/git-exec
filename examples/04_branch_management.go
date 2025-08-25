@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/instruqt/git-exec/pkg/git/commands"
+	"github.com/instruqt/git-exec/pkg/git"
 )
 
 func main() {
@@ -21,24 +21,24 @@ func main() {
 	repoPath := filepath.Join(tempDir, "branch-repo")
 
 	// Initialize repository
-	git, err := commands.NewGit()
+	gitInstance, err := git.NewGit()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Init(repoPath)
+	err = gitInstance.Init(repoPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	git.SetWorkingDirectory(repoPath)
+	gitInstance.SetWorkingDirectory(repoPath)
 
 	// Configure user
-	err = git.Config("user.name", "Branch Example")
+	err = gitInstance.Config("user.name", "Branch Example")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = git.Config("user.email", "branch@example.com")
+	err = gitInstance.Config("user.email", "branch@example.com")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -58,12 +58,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"main.go"})
+	err = gitInstance.Add([]string{"main.go"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Initial commit")
+	err = gitInstance.Commit("Initial commit")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -72,14 +72,14 @@ func main() {
 	branchNames := []string{"feature/auth", "feature/database", "bugfix/login-error"}
 
 	for _, branchName := range branchNames {
-		err = git.CreateBranch(branchName)
+		err = gitInstance.CreateBranch(branchName)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
 	// List branches
-	branches, err := git.ListBranches()
+	branches, err := gitInstance.ListBranches()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func main() {
 	}
 
 	// Work on feature branch
-	err = git.Checkout(commands.CheckoutWithBranch("feature/auth"))
+	err = gitInstance.Checkout(git.CheckoutWithBranch("feature/auth"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -111,18 +111,18 @@ func authenticate(user, pass string) bool {
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"auth.go"})
+	err = gitInstance.Add([]string{"auth.go"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Add authentication module")
+	err = gitInstance.Commit("Add authentication module")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Work on database branch
-	err = git.Checkout(commands.CheckoutWithBranch("feature/database"))
+	err = gitInstance.Checkout(git.CheckoutWithBranch("feature/database"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -141,25 +141,25 @@ func connect(dsn string) (*sql.DB, error) {
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"database.go"})
+	err = gitInstance.Add([]string{"database.go"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Add database connection")
+	err = gitInstance.Commit("Add database connection")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Merge branches back to main
-	err = git.Checkout(commands.CheckoutWithBranch("main"))
+	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Merge feature branches
 	for _, branchName := range []string{"feature/auth", "feature/database"} {
-		result, err := git.Merge(commands.MergeWithBranch(branchName))
+		result, err := gitInstance.Merge(git.MergeWithBranch(branchName))
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -170,14 +170,14 @@ func connect(dsn string) (*sql.DB, error) {
 
 	// Clean up merged branches
 	for _, branchName := range []string{"feature/auth", "feature/database"} {
-		err = git.DeleteBranch(branchName)
+		err = gitInstance.DeleteBranch(branchName)
 		if err != nil {
 			log.Printf("Could not delete branch %s: %v\n", branchName, err)
 		}
 	}
 
 	// Show final commit history
-	logs, err := git.Log(commands.LogWithMaxCount("5"))
+	logs, err := gitInstance.Log(git.LogWithMaxCount("5"))
 	if err == nil {
 		fmt.Println("\nCommit history:")
 		for i, logEntry := range logs {
