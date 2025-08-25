@@ -18,10 +18,10 @@ func TestSessionPersistence(t *testing.T) {
 	// Create session with configuration
 	session, err := git.NewSession(sessionPath,
 		git.SessionWithUser("Test User", "test@example.com"),
-		git.SessionWithMetadata("user-id", "user-123"),
-		git.SessionWithMetadata("session-id", "session-456"),
-		git.SessionWithMetadata("project", "test-project"),
-		git.SessionWithMetadata("team", "test-team"),
+		git.SessionWithMetadata("user", "id", "user-123"),
+		git.SessionWithMetadata("session", "id", "session-456"),
+		git.SessionWithMetadata("project", "name", "test-project"),
+		git.SessionWithMetadata("team", "name", "test-team"),
 	)
 	require.NoError(t, err)
 	
@@ -29,10 +29,10 @@ func TestSessionPersistence(t *testing.T) {
 	config := session.GetSessionConfig()
 	assert.Equal(t, "Test User", config.UserName)
 	assert.Equal(t, "test@example.com", config.UserEmail)
-	assert.Equal(t, "user-123", config.Metadata["user-id"])
-	assert.Equal(t, "session-456", config.Metadata["session-id"])
-	assert.Equal(t, "test-project", config.Metadata["project"])
-	assert.Equal(t, "test-team", config.Metadata["team"])
+	assert.Equal(t, "user-123", config.Metadata["user.id"])
+	assert.Equal(t, "session-456", config.Metadata["session.id"])
+	assert.Equal(t, "test-project", config.Metadata["project.name"])
+	assert.Equal(t, "test-team", config.Metadata["team.name"])
 	
 	// Create a commit to test automatic user context
 	testFile := filepath.Join(sessionPath, "test.txt")
@@ -62,9 +62,9 @@ func TestSessionReload(t *testing.T) {
 	// Create session with configuration
 	session1, err := git.NewSession(sessionPath,
 		git.SessionWithUser("Original User", "original@example.com"),
-		git.SessionWithMetadata("user-id", "user-original"),
-		git.SessionWithMetadata("session-id", "session-original"),
-		git.SessionWithMetadata("version", "1.0"),
+		git.SessionWithMetadata("user", "id", "user-original"),
+		git.SessionWithMetadata("session", "id", "session-original"),
+		git.SessionWithMetadata("app", "version", "1.0"),
 	)
 	require.NoError(t, err)
 	
@@ -86,9 +86,9 @@ func TestSessionReload(t *testing.T) {
 	config := session2.GetSessionConfig()
 	assert.Equal(t, "Original User", config.UserName)
 	assert.Equal(t, "original@example.com", config.UserEmail)
-	assert.Equal(t, "user-original", config.Metadata["user-id"])
-	assert.Equal(t, "session-original", config.Metadata["session-id"])
-	assert.Equal(t, "1.0", config.Metadata["version"])
+	assert.Equal(t, "user-original", config.Metadata["user.id"])
+	assert.Equal(t, "session-original", config.Metadata["session.id"])
+	assert.Equal(t, "1.0", config.Metadata["app.version"])
 }
 
 // Test session user updates and configuration changes
@@ -149,8 +149,8 @@ func TestSessionValidation(t *testing.T) {
 	
 	session, err := git.NewSession(sessionPath,
 		git.SessionWithUser("Test User", "test@example.com"),
-		git.SessionWithMetadata("user-id", "user-test"),
-		git.SessionWithMetadata("session-id", "session-test"),
+		git.SessionWithMetadata("user", "id", "user-test"),
+		git.SessionWithMetadata("session", "id", "session-test"),
 	)
 	require.NoError(t, err)
 	
@@ -166,8 +166,8 @@ func TestSessionValidation(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Test User", info.UserName)
 	assert.Equal(t, "test@example.com", info.UserEmail)
-	assert.Equal(t, "user-test", info.Metadata["user-id"])
-	assert.Equal(t, "session-test", info.Metadata["session-id"])
+	assert.Equal(t, "user-test", info.Metadata["user.id"])
+	assert.Equal(t, "session-test", info.Metadata["session.id"])
 }
 
 // Test session destroy functionality
@@ -178,9 +178,9 @@ func TestSessionDestroy(t *testing.T) {
 	// Create session with metadata
 	session, err := git.NewSession(sessionPath,
 		git.SessionWithUser("Test User", "test@example.com"),
-		git.SessionWithMetadata("user-id", "user-destroy"),
-		git.SessionWithMetadata("session-id", "session-destroy"),
-		git.SessionWithMetadata("cleanup", "test"),
+		git.SessionWithMetadata("user", "id", "user-destroy"),
+		git.SessionWithMetadata("session", "id", "session-destroy"),
+		git.SessionWithMetadata("test", "cleanup", "test"),
 	)
 	require.NoError(t, err)
 	

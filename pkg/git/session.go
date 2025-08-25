@@ -44,13 +44,14 @@ func SessionWithUser(name, email string) SessionOption {
 }
 
 
-// SessionWithMetadata adds custom metadata to the session
-func SessionWithMetadata(key, value string) SessionOption {
+// SessionWithMetadata adds custom metadata to the session with a section
+func SessionWithMetadata(section, key, value string) SessionOption {
 	return func(c *SessionConfig) {
 		if c.Metadata == nil {
 			c.Metadata = make(map[string]string)
 		}
-		c.Metadata[key] = value
+		sectionedKey := fmt.Sprintf("%s.%s", section, key)
+		c.Metadata[sectionedKey] = value
 	}
 }
 
@@ -235,9 +236,10 @@ func (s *sessionImpl) InitRepository() error {
 
 // Destroy removes session-specific configuration
 func (s *sessionImpl) Destroy() error {
-	// Remove session metadata
-	if err := s.removeConfig("session"); err != nil {
-		return fmt.Errorf("failed to remove session config: %w", err)
+	// Remove all metadata keys
+	for key := range s.config.Metadata {
+		cmd := s.newCommand("config", "--local", "--unset", key)
+		_, _ = cmd.Execute() // Ignore errors if key doesn't exist
 	}
 	
 	return nil
@@ -279,11 +281,10 @@ func (s *sessionImpl) persistConfig() error {
 		}
 	}
 	
-	// Set metadata
+	// Set metadata (keys already include section like "user.id")
 	for key, value := range s.config.Metadata {
-		configKey := fmt.Sprintf("session.%s", key)
-		if err := s.setConfigValue(configKey, value); err != nil {
-			return fmt.Errorf("failed to set %s: %w", configKey, err)
+		if err := s.setConfigValue(key, value); err != nil {
+			return fmt.Errorf("failed to set %s: %w", key, err)
 		}
 	}
 	
@@ -302,8 +303,8 @@ func (s *sessionImpl) loadConfig() error {
 	}
 	
 	
-	// Load session metadata
-	cmd := s.newCommand("config", "--get-regexp", "^session\\.")
+	// Load session metadata (look for section.key patterns like user.id, project.name)
+	cmd := s.newCommand("config", "--get-regexp", "^[a-zA-Z]+\\.[a-zA-Z]+$")
 	output, err := cmd.Execute()
 	if err == nil && len(output) > 0 {
 		lines := strings.Split(string(output), "\n")
@@ -313,8 +314,10 @@ func (s *sessionImpl) loadConfig() error {
 			}
 			parts := strings.SplitN(line, " ", 2)
 			if len(parts) == 2 {
-				key := strings.TrimPrefix(parts[0], "session.")
-				s.config.Metadata[key] = parts[1]
+				// Skip user.name and user.email as they're handled separately
+				if parts[0] != "user.name" && parts[0] != "user.email" {
+					s.config.Metadata[parts[0]] = parts[1]
+				}
 			}
 		}
 	}

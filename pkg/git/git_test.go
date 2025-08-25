@@ -37,7 +37,7 @@ func TestSessionMockUsage(t *testing.T) {
 	// Set up expectations
 	mockConfig := &git.SessionConfig{
 		UserName: "Test User",
-		Metadata: map[string]string{"session-id": "test-session-123"},
+		Metadata: map[string]string{"session.id": "test-session-123"},
 	}
 	mockSession.On("GetSessionConfig").Return(mockConfig).Once()
 	mockSession.On("Add", []string{"README.md"}).Return(nil).Once()
@@ -45,7 +45,7 @@ func TestSessionMockUsage(t *testing.T) {
 	// Use the mock
 	config := mockSession.GetSessionConfig()
 	assert.Equal(t, "Test User", config.UserName)
-	assert.Equal(t, "test-session-123", config.Metadata["session-id"])
+	assert.Equal(t, "test-session-123", config.Metadata["session.id"])
 
 	err := mockSession.Add([]string{"README.md"})
 	assert.NoError(t, err)
