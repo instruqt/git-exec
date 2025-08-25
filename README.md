@@ -187,7 +187,7 @@ if result.Success {
         }
     }
     
-    // Resolve conflicts programmatically
+    // Option 1: Resolve conflicts programmatically
     resolutions := []types.ConflictResolution{
         {
             FilePath: "conflicted-file.txt",
@@ -205,6 +205,48 @@ if result.Success {
     if err != nil {
         log.Fatal(err)
     }
+}
+```
+
+#### Manual Conflict Resolution
+
+Alternatively, conflicts can be resolved by manually editing files:
+
+```go
+// Attempt merge
+result, err := gitInstance.Merge(git.MergeWithBranch("feature/auth"))
+if err != nil {
+    log.Fatal(err)
+}
+
+if !result.Success && len(result.Conflicts) > 0 {
+    fmt.Printf("Merge conflicts detected in %d files:\n", len(result.ConflictedFiles))
+    
+    for _, conflictFile := range result.ConflictedFiles {
+        fmt.Printf("  - %s\n", conflictFile)
+    }
+    
+    fmt.Println("\nPlease resolve conflicts manually:")
+    fmt.Println("1. Edit the conflicted files to resolve conflicts")
+    fmt.Println("2. Remove conflict markers (<<<<<<, ======, >>>>>>)")
+    fmt.Println("3. Stage resolved files and continue merge")
+    
+    // Wait for manual resolution...
+    // User edits files externally in IDE/editor
+    
+    // After manual resolution, stage the resolved files
+    err = gitInstance.Add(result.ConflictedFiles)
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    // Continue the merge
+    err = gitInstance.MergeContinue()
+    if err != nil {
+        log.Fatal(err)
+    }
+    
+    fmt.Println("Merge completed successfully")
 }
 ```
 
