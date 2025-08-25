@@ -487,6 +487,15 @@ func CheckoutWithOrphan(branch string) Option {
 	return WithArgs("--orphan", branch)
 }
 
+// CheckoutWithFiles checks out specific files from the current or specified commit
+func CheckoutWithFiles(files []string) Option {
+	return func(c Command) {
+		// Add -- separator before files for safety
+		c.AddArgs("--")
+		c.AddArgs(files...)
+	}
+}
+
 // Merge-specific options
 
 // MergeWithBranch specifies the branch to merge
