@@ -29,14 +29,18 @@ The git-exec library has a **modern, production-ready architecture** with the fo
 
 ### Commands with Basic Implementation
 
-The following commands have basic structure but need completion:
-- `Merge()` - Has extensive options but needs conflict parsing
-- `Checkout()` - Basic implementation, needs output parsing
-- `Config()` - Basic implementation, needs get/set logic refinement
+The following commands have basic structure but could use enhancement:
+- `Checkout()` - Basic implementation, could use enhanced output parsing
+- `Config()` - Basic implementation, could use get/set logic refinement  
 - `Revert()`, `Reflog()`, `Remove()` - Have option definitions but basic execution
 
 ### Recently Implemented
 
+- **Complete Merge Operations**: Full merge support with conflict handling
+  - `Merge()` with comprehensive conflict detection and parsing
+  - `ResolveConflicts()` for programmatic conflict resolution
+  - `MergeAbort()` and `MergeContinue()` for merge workflow control
+  - Support for both programmatic and manual conflict resolution
 - **Session Management**: Complete persistent user sessions with `.git/config` storage
   - Smart repository detection (auto-detects existing repos vs new directories)
   - Automatic user attribution for all session operations
@@ -46,10 +50,13 @@ The following commands have basic structure but need completion:
   - `WithConfig()` for temporary git config on any operation
   - `WithConfigs()` for multiple config values at once
   - Clean, consistent API: `NewSession()` instead of `NewSessionWithConfig()`
+- **Package Structure Flattening**: Eliminated circular dependencies
+  - Moved all commands from `pkg/git/commands/` to `pkg/git/`
+  - Mockery-compatible interfaces with file-based naming
+  - 69.5% test coverage with 41 comprehensive tests
 
 ### Not Yet Implemented
 
-- **Conflict Resolution**: Parsing and handling merge conflicts  
 - **Bare Repository**: Specific handling for bare repository operations
 
 ## API Design
