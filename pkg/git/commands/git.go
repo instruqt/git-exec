@@ -2,6 +2,8 @@ package commands
 
 import (
 	"os/exec"
+
+	gitpkg "github.com/instruqt/git-exec/pkg/git"
 )
 
 // git implements the Git interface
@@ -20,6 +22,11 @@ func NewGit() (*git, error) {
 	return &git{
 		path: path,
 	}, nil
+}
+
+// NewGitInstance creates a new Git instance (basic, no session)
+func NewGitInstance() (gitpkg.Git, error) {
+	return NewGit()
 }
 
 // SetWorkingDirectory sets the working directory for git operations

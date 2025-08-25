@@ -1,13 +1,14 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 import "fmt"
 
 // Init initializes a new Git repository
-func (g *git) Init(path string, opts ...Option) error {
+func (g *git) Init(path string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("init", path)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
@@ -16,32 +17,32 @@ func (g *git) Init(path string, opts ...Option) error {
 // Init-specific options
 
 // InitWithBare creates a bare repository
-func InitWithBare() Option {
+func InitWithBare() gitpkg.Option {
 	return WithArgs("--bare")
 }
 
 // InitWithQuiet suppresses output
-func InitWithQuiet() Option {
+func InitWithQuiet() gitpkg.Option {
 	return WithArgs("--quiet")
 }
 
 // InitWithBranch sets the name of the initial branch
-func InitWithBranch(branch string) Option {
+func InitWithBranch(branch string) gitpkg.Option {
 	return WithArgs("--initial-branch", branch)
 }
 
 // InitWithTemplate specifies the template directory
-func InitWithTemplate(template string) Option {
+func InitWithTemplate(template string) gitpkg.Option {
 	return WithArgs("--template", template)
 }
 
 // InitWithSeparateGitDir creates the repository with a separate git directory
-func InitWithSeparateGitDir(gitdir string) Option {
+func InitWithSeparateGitDir(gitdir string) gitpkg.Option {
 	return WithArgs("--separate-git-dir", gitdir)
 }
 
 // InitWithShared specifies that the repository is to be shared amongst group members
-func InitWithShared(permissions string) Option {
+func InitWithShared(permissions string) gitpkg.Option {
 	if permissions == "" {
 		return WithArgs("--shared")
 	}

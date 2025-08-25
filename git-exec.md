@@ -1,611 +1,906 @@
-# Git-Exec Library Design
+# Git-Exec Library Documentation
 
 ## Overview
 
-Git-exec is a new Go library that provides a clean, type-safe wrapper around the Git CLI. Designed specifically for the Instruqt VCS service, it follows the terraform-exec pattern to offer both simplicity for basic operations and extensibility for complex scenarios through an options pattern.
+Git-exec is a Go library that provides a clean, type-safe wrapper around the Git CLI. Designed specifically for the Instruqt VCS service, it uses a functional options pattern to offer both simplicity for basic operations and extensibility for complex scenarios.
 
-## Why Git-Exec vs Alternatives
+## Current Implementation Status
 
-### vs Direct exec Usage
+The git-exec library has a **modern, production-ready architecture** with the following features:
 
-**Direct exec approach**:
-```go
-cmd := exec.Command("git", "clone", "--bare", repoURL, destPath)
-cmd.Env = append(os.Environ(), "GIT_ASKPASS=echo", "GIT_TERMINAL_PROMPT=0")
-output, err := cmd.CombinedOutput()
-if err != nil {
-    // Raw error handling, exit code interpretation
-    return fmt.Errorf("git clone failed: %v, output: %s", err, output)
-}
-```
+### ✅ Completed Features
 
-**Git-exec approach**:
-```go
-err := git.Clone(repoURL, destPath, WithBare(), WithAuth(token))
-if gitErr, ok := err.(*GitError); ok && gitErr.ErrorType == ErrorAuth {
-    // Structured error handling
-    return handleAuthError(gitErr)
-}
-```
+**Architecture & Infrastructure**:
+- Modern package structure (`pkg/git/`, `pkg/git/commands/`, `pkg/git/types/`, `pkg/git/errors/`)
+- Type-safe functional options pattern with `Option func(Command)`
+- Reusable command infrastructure with centralized execution
+- Structured error handling with `GitError` types
+- Environment variable support for authentication
+- Timeout and context support for all operations
 
-**Advantages of git-exec**:
-- **Type Safety**: Parameters are validated at compile time rather than runtime
-- **Error Handling**: Structured error types instead of parsing stderr strings
-- **Security**: Prevents command injection through parameter validation
-- **Maintainability**: Centralized Git command logic instead of scattered exec calls
-- **Testing**: Easy mocking and testing without spawning processes
-- **Documentation**: Self-documenting API vs remembering Git CLI flags
+**Implemented Commands (30+)**:
+- **Core Operations**: Clone, Init, Add, Commit, Status, Reset
+- **Remote Management**: AddRemote, RemoveRemote, SetRemoteURL, ListRemotes  
+- **Branch Operations**: ListBranches, CreateBranch, DeleteBranch, SetUpstream, Checkout
+- **Repository Inspection**: Log, Show, Diff (with sophisticated parsing)
+- **Synchronization**: Fetch, Pull, Push
+- **Tag Operations**: Tag, ListTags, DeleteTag, PushTags, DeleteRemoteTag
+- **Advanced Operations**: Merge, Rebase, Revert, Reflog, Config, Remove
 
-### vs go-git Pure Go Library
+### 🚧 Commands with Basic Implementation
 
-**go-git limitations discovered in research**:
-- **No merge conflict resolution**: Only supports fast-forward merges
-- **Limited merge strategies**: Cannot handle three-way merges that VCS service requires
-- **Compatibility gaps**: Missing advanced Git features needed for production systems
-- **Memory usage**: Pure Go implementation can be memory-intensive for large repositories
+The following commands have basic structure but need completion:
+- `Merge()` - Has extensive options but needs conflict parsing
+- `Checkout()` - Basic implementation, needs output parsing
+- `Config()` - Basic implementation, needs get/set logic refinement
+- `Revert()`, `Reflog()`, `Remove()` - Have option definitions but basic execution
 
-**Git-exec advantages**:
-- **Full Git compatibility**: Access to complete Git CLI feature set including conflict resolution
-- **Proven reliability**: Leverages Git's battle-tested implementation
-- **Performance**: Git CLI is optimized for operations like large repository cloning
-- **Feature parity**: Always matches latest Git version capabilities
-- **Ecosystem compatibility**: Works with all Git configurations and credential helpers
+### ✅ Recently Implemented
 
-### vs git2go (libgit2 bindings)
+- **Session Management**: Complete persistent user sessions with `.git/config` storage
+  - Smart repository detection (auto-detects existing repos vs new directories)
+  - Automatic user attribution for all session operations
+  - Custom metadata storage in `[session]` section
+  - Session validation, loading, and destruction
+- **Enhanced Options Pattern**: 
+  - `WithConfig()` for temporary git config on any operation
+  - `WithConfigs()` for multiple config values at once
+  - Clean, consistent API: `NewSession()` instead of `NewSessionWithConfig()`
 
-**git2go challenges**:
-- **C dependencies**: Requires libgit2 C library, complicating builds and deployments
-- **Version compatibility**: Must maintain compatibility between Go bindings and libgit2 versions  
-- **Platform complexity**: Different build requirements across Linux, macOS, Windows
-- **Limited API coverage**: Not all Git operations exposed through libgit2
-- **Memory management**: Potential memory leaks from C interop
-- **Container complexity**: Additional system dependencies in Docker images
+### ❌ Not Yet Implemented
 
-**Git-exec advantages**:
-- **Zero dependencies**: Only requires Git CLI binary (already present in most environments)
-- **Simple deployment**: No compilation of C libraries or cross-platform concerns  
-- **Full API access**: Any Git operation accessible through CLI can be used
-- **Container friendly**: Minimal Docker image impact
-- **Debugging**: Git operations visible through standard process monitoring
-
-### vs go-git-cmd-wrapper
-
-**go-git-cmd-wrapper verbosity**:
-```go
-output, err := git.Clone(
-    clone.Repository("https://github.com/user/repo"),
-    clone.Directory("/path/to/dest"),
-    clone.Bare,
-    global.Config("user.name", "Name"),
-    global.Config("user.email", "email@example.com"),
-)
-```
-
-**Git-exec clarity**:
-```go
-err := git.Clone(repoURL, destPath,
-    WithBare(),
-    WithUser("Name", "email@example.com"),
-)
-```
-
-**Git-exec advantages**:
-- **Required vs optional**: Required parameters in signature, options for advanced cases
-- **Less imports**: Single import vs multiple sub-packages
-- **Better defaults**: Sensible defaults for common operations
-- **VCS-optimized**: API designed specifically for version control service needs
-
-## Design Goals
-
-The library aims to provide a Go-friendly interface to Git operations while maintaining full compatibility with Git CLI functionality. Key design principles include:
-
-**Simplicity First**: Common operations should require minimal parameters and be intuitive to use.
-
-**Extensibility**: Complex scenarios should be supported through optional parameters without complicating simple use cases.
-
-**Type Safety**: Git operations should use structured types rather than string manipulation for command construction.
-
-**Error Clarity**: Git errors should be parsed into meaningful, actionable error types that applications can handle appropriately.
-
-**Full Git Compatibility**: The library should support the complete range of Git operations needed for production version control systems.
+- **Conflict Resolution**: Parsing and handling merge conflicts  
+- **Bare Repository**: Specific handling for bare repository operations
 
 ## API Design
 
-### Core Interface Design
+### Core Interface
 
-Git-exec uses a clean, method-based interface with required parameters in function signatures and optional parameters through the options pattern:
+The library provides a clean `Git` interface with all operations:
 
 ```go
-// Basic operations - minimal parameters
-git.Clone(repoURL, destPath)
-git.Add("file.txt") 
-git.Commit("message", author)
-git.Push("origin", "main")
+type Git interface {
+    // Working directory management
+    SetWorkingDirectory(wd string)
+    
+    // Repository operations
+    Init(path string, options ...Option) error
+    Clone(url, destination string, options ...Option) error
+    
+    // File operations
+    Add(files []string, options ...Option) error
+    Reset(files []string, options ...Option) error
+    Remove(options ...Option) error
+    
+    // Commit operations
+    Commit(message string, options ...Option) error
+    Revert(options ...Option) error
+    
+    // Branch operations
+    ListBranches(options ...Option) ([]types.Branch, error)
+    CreateBranch(branch string, options ...Option) error
+    DeleteBranch(branch string, options ...Option) error
+    SetUpstream(branch string, remote string, options ...Option) error
+    Checkout(options ...Option) error
+    
+    // Remote operations
+    AddRemote(name, url string, options ...Option) error
+    RemoveRemote(name string, options ...Option) error
+    SetRemoteURL(name, url string, options ...Option) error
+    ListRemotes(options ...Option) ([]types.Remote, error)
+    
+    // Synchronization
+    Fetch(options ...Option) ([]types.Remote, error)
+    Pull(options ...Option) (*types.MergeResult, error)
+    Push(options ...Option) ([]types.Remote, error)
+    
+    // Tag operations
+    Tag(name string, options ...Option) error
+    ListTags(options ...Option) ([]string, error)
+    DeleteTag(name string, options ...Option) error
+    PushTags(remote string, options ...Option) ([]types.Remote, error)
+    DeleteRemoteTag(remote, tagName string, options ...Option) error
+    
+    // Inspection
+    Status(options ...Option) ([]types.File, error)
+    Diff(options ...Option) ([]types.Diff, error)
+    Show(object string, options ...Option) (*types.Log, error)
+    Log(options ...Option) ([]types.Log, error)
+    
+    // Merge and rebase
+    Merge(options ...Option) error
+    Rebase(options ...Option) error
+    
+    // Configuration
+    Config(key string, value string, options ...Option) error
+    Reflog(options ...Option) error
+}
+```
 
-// Advanced operations - options for complex scenarios
-git.Clone(repoURL, destPath,
-    WithBare(),
-    WithBranch("main"), 
-    WithDepth(1),
-    WithAuth(token),
+### Options Pattern
+
+The library uses functional options for all commands, providing type safety and flexibility:
+
+```go
+// Session operations (persistent user context)
+session := git.NewSession("/path/to/project",
+    git.WithUser("Jane Developer", "jane@instruqt.com"),
+    git.WithInstruqtMetadata("user-123", "session-456", time.Now()),
+    git.WithMetadata("track", "git-basics"),
 )
 
-git.Merge("feature-branch",
-    WithStrategy("recursive"),
-    WithConflictHandler(conflictResolver),
-)
+err := session.Add([]string{"file.txt"})
+err := session.Commit("Fix authentication bug") // Uses Jane's context automatically
+
+// One-off operations (temporary config)
+err := git.Add([]string{"*.go"}, 
+    AddWithDryRun(),
+    AddWithVerbose(),
+    WithTimeout(30*time.Second))
+
+// Clone with temporary authentication
+err := git.Clone(repoURL, destPath,
+    CloneWithBare(),
+    CloneWithBranch("main"),
+    CloneWithDepth(1),
+    WithAuth(token))
+
+// Commit with temporary user config
+err := git.Commit("Quick fix",
+    commands.WithConfig("user.name", "Temp Worker"),
+    commands.WithConfig("user.email", "temp@example.com"),
+    CommitWithSignoff())
+
+// Multiple temporary configs at once
+configs := map[string]string{
+    "user.name": "Jane Developer",
+    "user.email": "jane@example.com",
+    "commit.gpgsign": "false",
+}
+err := git.Commit("Multi-config commit", commands.WithConfigs(configs))
 ```
 
-### Comparison with go-git-cmd-wrapper
-**go-git-cmd-wrapper** uses functional options for all parameters:
+### Generic Options
+
+Available for all commands:
+
 ```go
-git.Clone(clone.Repository("url"), clone.Directory("path"))
-git.Fetch(fetch.NoTags, fetch.Remote("upstream"))
+WithTimeout(duration)        // Set command timeout
+WithAuth(token)              // GitHub token authentication  
+WithUser(name, email)        // Git user attribution (environment variables)
+WithConfig(key, value)       // Temporary git config (-c key=value)
+WithConfigs(map[string]string) // Multiple git config values at once
+WithEnv(key, value)          // Environment variables
+WithWorkingDirectory(dir)    // Custom working directory
+WithStdin(input)             // Command input
+WithQuiet()                  // Suppress output
+WithVerbose()                // Verbose output
+WithArgs(args...)            // Escape hatch for unsupported options
 ```
 
-**git-exec** keeps required parameters in the signature:
+### Session Options
+
+Available for session creation:
+
 ```go
-git.Clone(url, path, WithNoTags(), WithRemote("upstream"))
+WithUser(name, email)        // Set session user (persistent in .git/config)
+WithInstruqtMetadata(userID, sessionID, created) // Instruqt-specific metadata
+WithMetadata(key, value)     // Custom metadata (stored in [session] section)
+WithWorkingDirectory(dir)    // Session working directory
 ```
 
-This approach reduces verbosity for common cases while maintaining full flexibility for advanced scenarios.
+### Command-Specific Options
 
-## VCS Service Requirements
+Each command has its own set of specific options. Examples:
 
-### Conflict Resolution Support
+**Clone Options**:
+```go
+CloneWithBare()              // Create bare repository
+CloneWithBranch(branch)      // Specific branch
+CloneWithDepth(depth)        // Shallow clone
+CloneWithSingleBranch()      // Single branch only
+CloneWithNoCheckout()        // Skip checkout
+CloneWithRecurse()           // Include submodules
+```
 
-The library must handle merge conflicts that arise during publishing operations:
+**Commit Options**:
+```go
+CommitWithAll()              // Commit all changed files
+CommitWithAmend()            // Amend previous commit
+CommitWithSignoff()          // Add Signed-off-by
+CommitWithNoVerify()         // Skip hooks
+CommitWithAllowEmpty()       // Allow empty commit
+CommitWithAuthor(author)     // Override author
+```
+
+**Push Options**:
+```go
+PushWithForce()              // Force push
+PushWithSetUpstream()        // Set upstream branch
+PushWithTags()               // Push tags
+PushWithDryRun()             // Dry run
+PushWithAtomic()             // Atomic push
+```
+
+**Merge Options**:
+```go
+MergeWithBranch(branch)      // Merge specific branch
+MergeWithCommit(commit)      // Merge commit SHA
+MergeWithNoFF()              // Force merge commit
+MergeWithFFOnly()            // Fast-forward only
+MergeWithSquash()            // Squash commits
+MergeWithStrategy(strategy)  // Use specific strategy
+MergeWithMessage(msg)        // Custom merge message
+MergeWithAbort()             // Abort ongoing merge
+MergeWithContinue()          // Continue after resolving
+```
+
+## Merge Operations and Conflict Resolution
+
+The library provides comprehensive merge functionality with automatic conflict detection and resolution helpers.
+
+### Basic Merge Operations
 
 ```go
+// Simple branch merge
+result, err := git.Merge(MergeWithBranch("feature-branch"))
+if err != nil {
+    log.Fatal(err)
+}
+
+if result.Success {
+    fmt.Printf("Successfully merged %s\n", result.MergedBranch)
+    if result.FastForward {
+        fmt.Println("Fast-forward merge")
+    } else {
+        fmt.Printf("Merge commit created using %s strategy\n", result.Strategy)
+    }
+} else {
+    fmt.Printf("Merge failed: %s\n", result.AbortReason)
+}
+```
+
+### Conflict Detection and Handling
+
+```go
+// Merge with conflict detection
+result, err := git.Merge(MergeWithBranch("conflicting-branch"))
+if err != nil {
+    log.Fatal(err)
+}
+
+if !result.Success && len(result.Conflicts) > 0 {
+    fmt.Printf("Merge conflicts detected in %d files:\n", len(result.ConflictedFiles))
+    
+    for _, conflict := range result.Conflicts {
+        fmt.Printf("File: %s (Status: %s)\n", conflict.Path, conflict.Status)
+        
+        for i, section := range conflict.Sections {
+            fmt.Printf("  Conflict %d (lines %d-%d):\n", i+1, section.StartLine, section.EndLine)
+            fmt.Printf("    Our version:\n%s\n", section.OurContent)
+            fmt.Printf("    Their version:\n%s\n", section.TheirContent)
+        }
+    }
+}
+```
+
+### Conflict Resolution Strategies
+
+#### Use Ours Strategy
+```go
+// Resolve all conflicts by keeping our version
+resolutions := []types.ConflictResolution{
+    {
+        FilePath: "conflicted-file.txt",
+        UseOurs:  true,
+    },
+}
+
+err := git.ResolveConflicts(resolutions)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Continue the merge
+err = git.MergeContinue()
+```
+
+#### Use Theirs Strategy
+```go
+// Resolve conflicts by keeping their version
+resolutions := []types.ConflictResolution{
+    {
+        FilePath: "conflicted-file.txt",
+        UseTheirs: true,
+    },
+}
+
+err := git.ResolveConflicts(resolutions)
+```
+
+#### Custom Resolution
+```go
+// Provide custom resolution for specific sections
+resolutions := []types.ConflictResolution{
+    {
+        FilePath: "src/main.go",
+        Custom:   true,
+        Sections: []types.ResolvedSection{
+            {
+                SectionIndex: 0,
+                Resolution:   "// This is our custom resolution\nfunc main() {\n    fmt.Println(\"Hello, World!\")\n}",
+            },
+        },
+    },
+}
+
+err := git.ResolveConflicts(resolutions)
+```
+
+### Merge Result Information
+
+The `MergeResult` provides comprehensive information about the merge operation:
+
+```go
+type MergeResult struct {
+    Success          bool                 // Whether merge completed successfully
+    FastForward      bool                 // Whether it was a fast-forward merge
+    MergeCommit      string               // SHA of merge commit (if created)
+    MergedBranch     string               // Name of branch that was merged
+    BaseBranch       string               // Base branch for the merge
+    Strategy         string               // Merge strategy used (recursive, ort, octopus)
+    ConflictedFiles  []string             // List of files with conflicts
+    Conflicts        []ConflictFile       // Detailed conflict information
+    Stats            MergeStats           // File change statistics
+    AbortReason      string               // Reason if merge failed
+}
+
 type ConflictFile struct {
-    Path     string
-    Sections []ConflictSection
+    Path      string               // File path
+    Status    ConflictStatus       // Type of conflict (both_modified, etc.)
+    Sections  []ConflictSection    // Individual conflict sections
+    Content   string               // Raw file content with markers
 }
 
 type ConflictSection struct {
-    LineStart    int
-    LineEnd      int
-    UserVersion  string
-    TheirVersion string
-    BaseVersion  string
+    StartLine    int      // Line number where conflict starts
+    EndLine      int      // Line number where conflict ends
+    OurContent   string   // Content from our branch
+    TheirContent string   // Content from their branch
+    BaseContent  string   // Original content (with diff3 style)
+}
+```
+
+### Aborting Merges
+
+```go
+// Abort an ongoing merge and return to pre-merge state
+err := git.MergeAbort()
+if err != nil {
+    log.Fatal(err)
 }
 
-result, err := git.Merge(branch,
-    WithConflictHandler(func(conflicts []ConflictFile) error {
-        // Present conflicts to user interface
-        resolutions := collectUserResolutions(conflicts)
-        return applyResolutions(resolutions)
-    }),
-)
-```
-
-**Conflict Detection**: Parse Git's conflict markers to identify conflicted files and sections.
-**Conflict Presentation**: Structure conflict data for frontend presentation.
-**Resolution Application**: Apply user-provided resolutions and validate the result.
-**Merge Completion**: Complete the merge operation after successful conflict resolution.
-
-### Bare Repository Operations
-
-The VCS service requires extensive bare repository management:
-
-```go
-// Create bare repository
-git.Clone(githubURL, bareRepoPath, WithBare())
-
-// Initialize bare repository
-git.Init(repoPath, WithBare())
-
-// Fetch into bare repository
-git.Fetch(WithRemote("origin"), WithPrune(), WithPruneTags())
-```
-
-**Bare Repository Creation**: Support `--bare` flag for creating authoritative repositories.
-**Bare Repository Operations**: Enable fetch, push, and reference management on bare repositories.
-**Reference Management**: Handle branch and tag operations without working directories.
-
-### Advanced Authentication
-
-GitHub App integration requires sophisticated credential handling:
-
-```go
-type GitHubAuth struct {
-    InstallationToken string
-    Expiry           time.Time
+// Verify clean state
+files, err := git.Status()
+if err != nil {
+    log.Fatal(err)
 }
 
-git.Clone(repoURL, destPath,
-    WithAuth(GitHubAuth{Token: token}),
-    WithTimeout(30*time.Second),
-)
-
-git.Push(remote, branch,
-    WithAuth(credentials),
-    WithForce(),
-)
+// Check that no files are in conflicted state
+for _, file := range files {
+    if file.Status == "UU" { // UU indicates unmerged conflict
+        fmt.Printf("Warning: %s still shows conflicts\n", file.Name)
+    }
+}
 ```
 
-**Token Management**: Handle GitHub App installation tokens with automatic refresh.
-**Credential Helpers**: Support Git credential helpers for secure authentication.
-**Authentication Validation**: Provide clear errors for authentication failures.
-
-### Session Management and Persistence
-
-User sessions require isolated Git operations with automatic state persistence through `.git/config`:
+### Advanced Merge Options
 
 ```go
-// Create session with persistent configuration
-session, err := git.NewSession(sessionPath,
-    WithUser("jane@instruqt.com", "Jane Developer"),
-    WithInstruqtMetadata(userID, sessionID, timestamp),
+// Merge with specific strategy and custom message
+result, err := git.Merge(
+    MergeWithBranch("feature"),
+    MergeWithStrategy("recursive"),
+    MergeWithStrategyOption("ours"),
+    MergeWithMessage("Merge feature branch with conflict resolution"),
+    MergeWithNoEdit(),
 )
-// Writes configuration to {sessionPath}/.git/config:
-// [user]
-//     name = Jane Developer
-//     email = jane@instruqt.com
-// [instruqt]
-//     userid = user-123
-//     sessionid = session-456
-//     created = 2024-08-15T10:30:00Z
 
-// Load existing session automatically
-session, err := git.LoadSession(sessionPath)
-// Reads .git/config and restores all session context
+// Force merge commit even on fast-forward
+result, err := git.Merge(
+    MergeWithBranch("hotfix"),
+    MergeWithNoFF(),
+    MergeWithMessage("Hotfix: Critical security update"),
+)
 
-// All operations use correct user attribution automatically
-session.Add("file.txt")
-session.Commit("Fix authentication bug") // Correct author/committer
-session.Merge("main")                    // Merge commit has proper attribution
+// Squash merge (combines all commits into single commit)
+result, err := git.Merge(
+    MergeWithBranch("feature-branch"),
+    MergeWithSquash(),
+)
 ```
 
-**Persistent Configuration**: Session state is stored in `.git/config` for automatic recovery across service restarts.
+## Session Metadata System
 
-**Automatic User Context**: Once configured, all Git operations inherit the correct user name and email without manual setup.
+Sessions store persistent metadata in `.git/config` that survives service restarts and git operations:
 
-**Session Recovery**: Sessions can be resumed by simply loading from the session directory - all configuration is automatically restored.
+### Storage Location
 
-**Audit Trail**: Every commit automatically has proper Instruqt user attribution without additional intervention.
+Metadata is stored in three sections of `.git/config`:
 
-**Validation and Cleanup**: Sessions can be validated and expired based on metadata stored in Git config.
+```ini
+[user]                        # Session user context
+    name = Jane Developer
+    email = jane@instruqt.com
 
-### Error Handling and Types
+[instruqt]                    # Instruqt-specific metadata
+    userid = user-123
+    sessionid = session-456
+    created = 2025-08-25T10:00:20+02:00
 
-Structured error handling for different failure scenarios:
+[session]                     # Custom application metadata
+    track = git-basics
+    environment = production
+    project = web-app
+    team = frontend
+    priority = high
+```
+
+### Metadata Usage
+
+```go
+// Create session with metadata
+session, err := git.NewSession("/path/to/project",
+    git.WithUser("Jane Developer", "jane@instruqt.com"),
+    git.WithInstruqtMetadata("user-123", "session-456", time.Now()),
+    git.WithMetadata("track", "git-basics"),
+    git.WithMetadata("environment", "production"),
+    git.WithMetadata("project", "web-app"),
+    git.WithMetadata("team", "frontend"),
+    git.WithMetadata("priority", "high"),
+)
+
+// Retrieve metadata
+config := session.GetConfig()
+fmt.Printf("Track: %s\n", config.Metadata["track"])        // git-basics
+fmt.Printf("Environment: %s\n", config.Metadata["environment"]) // production
+fmt.Printf("Project: %s\n", config.Metadata["project"])    // web-app
+```
+
+### Common Use Cases
+
+- **Instruqt Tracks**: Store track name, challenge info, user progress
+- **Multi-tenant Applications**: Store tenant ID, organization info
+- **CI/CD Pipelines**: Store pipeline ID, build number, deployment target
+- **Project Management**: Store project type, priority, team assignment
+- **Feature Flags**: Store debug settings, experimental features
+- **Audit Trails**: Store additional context beyond git's built-in data
+
+### Session vs Temporary Config
+
+| Feature | Session Config | Temporary Config |
+|---------|---------------|------------------|
+| **Storage** | `.git/config` (persistent) | Command-only (temporary) |
+| **Usage** | `git.WithUser()` in session | `commands.WithConfig()` per operation |
+| **Survives** | Service restarts, container rebuilds | Single command only |
+| **Best for** | Long-running sessions, user attribution | One-off operations, testing |
+
+```go
+// Session config - persistent
+session := git.NewSession("/path", git.WithUser("Alice", "alice@company.com"))
+session.Commit("My commit") // Always uses Alice's info
+
+// Temporary config - one command only  
+git.Commit("Quick fix", commands.WithConfig("user.name", "Bob"))
+git.Commit("Another commit") // Uses repository default, not Bob
+```
+
+## Structured Types
+
+The library uses structured types for Git objects:
+
+```go
+// File status
+type File struct {
+    Path       string
+    Status     string
+    OldPath    string // For renames
+    IsStaged   bool
+    IsTracked  bool
+}
+
+// Commit information
+type Log struct {
+    Hash      string
+    Author    Author
+    Committer Author
+    Message   string
+    Date      time.Time
+    Body      string
+    Files     []FileStat
+}
+
+// Branch information
+type Branch struct {
+    Name      string
+    Hash      string
+    IsCurrent bool
+    IsRemote  bool
+    Upstream  string
+}
+
+// Remote information
+type Remote struct {
+    Name     string
+    FetchURL string
+    PushURL  string
+    Branches []string
+}
+
+// Merge result
+type MergeResult struct {
+    Success       bool
+    FastForward   bool
+    MergeCommit   string
+    Conflicts     []string
+    MergedBranch  string
+}
+
+// Diff information
+type Diff struct {
+    FileA       string
+    FileB       string
+    Hash        string
+    Status      string
+    Insertions  int
+    Deletions   int
+    IsBinary    bool
+    Hunks       []Hunk
+}
+```
+
+## Error Handling
+
+Structured error handling with `GitError`:
 
 ```go
 type GitError struct {
-    Command    []string
-    ExitCode   int
-    Stderr     string
-    ErrorType  ErrorType
+    Command  []string
+    ExitCode int
+    Stderr   string
+    Stdout   string
 }
-
-type ErrorType int
-
-const (
-    ErrorConflict ErrorType = iota
-    ErrorAuth
-    ErrorNetwork
-    ErrorNotFound
-    ErrorPermission
-)
 
 // Usage
-_, err := git.Merge(branch)
-if gitErr, ok := err.(*GitError); ok {
-    switch gitErr.ErrorType {
-    case ErrorConflict:
-        // Handle conflicts
-    case ErrorAuth:
-        // Handle authentication
+result, err := git.Merge(MergeWithBranch("feature"))
+if gitErr, ok := err.(*errors.GitError); ok {
+    switch gitErr.ExitCode {
+    case 1:
+        // Handle merge conflict
+        fmt.Println("Merge conflict:", gitErr.Stderr)
+    case 128:
+        // Handle invalid operation
+        fmt.Println("Invalid operation:", gitErr.Stderr)
     }
 }
 ```
 
-**Structured Errors**: Parse Git output into meaningful error types.
-**Exit Code Mapping**: Map Git exit codes to appropriate error categories.
-**Contextual Information**: Include command details and output for debugging.
+## Command Execution Infrastructure
 
-## Implementation Architecture
-
-### Command Construction
-
-The library uses a builder pattern with options for flexible command construction:
+The library has a robust command execution system:
 
 ```go
-type Command struct {
-    args        []string
-    workingDir  string
-    env         map[string]string
-    timeout     time.Duration
-    credentials Credentials
+// Internal command structure
+type command struct {
+    gitPath    string
+    args       []string
+    workingDir string
+    env        map[string]string
+    timeout    time.Duration
+    stdin      *bytes.Buffer
+    noStderr   bool
 }
 
-type Option func(*Command)
-
-func WithBare() Option {
-    return func(c *Command) {
-        c.args = append(c.args, "--bare")
-    }
-}
+// Execution methods
+cmd.Execute()         // Returns stdout, creates GitError on failure
+cmd.ExecuteCombined() // Returns combined stdout/stderr
 ```
 
-### Process Execution
+## Usage Examples
 
-Secure process execution with proper timeout and error handling:
-
-```go
-func (c *Command) Execute() (*Result, error) {
-    ctx, cancel := context.WithTimeout(context.Background(), c.timeout)
-    defer cancel()
-    
-    cmd := exec.CommandContext(ctx, "git", c.args...)
-    cmd.Dir = c.workingDir
-    cmd.Env = buildEnv(c.env)
-    
-    output, err := cmd.CombinedOutput()
-    return parseResult(output, err)
-}
-```
-
-### Output Parsing
-
-Structured parsing of Git command output:
+### Session Management
 
 ```go
-func parseStatus(output string) (*StatusResult, error) {
-    // Parse git status output into structured format
-}
+import "github.com/instruqt/git-exec/pkg/git"
 
-func parseConflicts(output string) ([]ConflictFile, error) {
-    // Parse merge conflict markers into structured data
-}
-```
-
-## Git Commands by Function for VCS Service
-
-The git-exec library needs to support specific Git operations grouped by their function in the VCS service:
-
-### Core VCS Operations (Required for basic functionality)
-
-**Repository Lifecycle**:
-```go
-git.Clone(url, path, WithBare())                 // Create bare repositories
-git.Init(path, WithBare())                       // Initialize bare repositories
-git.Clone(barePath, sessionPath)                 // Create user sessions
-```
-
-**Publishing Workflow**:
-```go
-git.Add("file.txt")                              // Stage changes
-git.Commit("message")                            // Commit changes
-git.Merge("main", WithConflictHandler(handler))  // Three-way merge with conflicts
-git.Status(WithPorcelain())                      // Parse merge status
-```
-
-**GitHub Synchronization**:
-```go
-git.Fetch(WithRemote("origin"), WithPrune(), WithPruneTags()) // Sync from GitHub
-git.Push("origin", "main", WithAuth(token))                  // Push to GitHub
-```
-
-### Branch and Tag Management (Required for multi-branch support)
-
-**Branch Operations**:
-```go
-git.Checkout("branch-name")                      // Switch branches
-git.CreateBranch("new-branch")                   // Create branches
-git.DeleteBranch("old-branch")                   // Delete branches
-git.ListBranches()                               // List all branches
-```
-
-**Tag Operations**:
-```go
-git.CreateTag("v1.0.0", "Release message")       // Create annotated tags
-git.DeleteTag("v1.0.0")                         // Delete tags
-git.ListTags()                                   // List all tags
-git.PushTags("origin")                           // Push tags to remote
-```
-
-### Remote Management (Required for repository updates)
-
-```go
-git.AddRemote("origin", url)                     // Add remotes during connection
-git.SetRemoteURL("origin", newUrl)               // Update URLs for renamed repos
-git.RemoveRemote("origin")                       // Remove remotes during disconnection
-git.ListRemotes()                                // List all remotes
-```
-
-### UI Support Commands (Required for user interface)
-
-```go
-git.Log(WithMaxCount(10))                        // Get commit history
-git.Diff("HEAD~1", "HEAD")                       // Compare commits
-git.DiffWorkingDirectory()                       // Show current session changes
-git.DiffStaged()                                 // Show staged changes
-```
-
-### Edge Case Operations (Nice to have for completeness)
-
-```go
-git.PushAll("origin", WithTags())                // Push all branches and tags
-git.DeleteRemoteTag("origin", "v1.0.0")          // Delete remote tags
-git.ResetHard("HEAD~1")                          // Reset repository state
-git.CleanWorkingDirectory(WithForce())           // Clean working directory
-```
-
-### Commands Explicitly Out of Scope
-
-The following Git commands are not needed for the VCS service and should be excluded from initial development:
-
-- `git rebase` - Not used in VCS publishing workflow
-- `git bisect` - Debugging tool, not needed for service operations
-- `git submodule` - VCS service doesn't manage submodules
-- `git worktree` - Sessions provide isolation instead
-- `git cherry-pick` - Not part of VCS merge strategy
-- `git reflog` - Low-level debugging, not needed for service
-- `git filter-branch` - Repository rewriting not supported
-- `git gc` - Garbage collection handled by hosting platform
-
-### Implementation Priority
-
-1. **Core VCS Operations** - Essential for basic publishing workflow (9 commands)
-2. **Branch and Tag Management** - Required for multi-branch support (8 commands)  
-3. **Remote Management** - Required for repository lifecycle (4 commands)
-4. **UI Support Commands** - Required for user interface (4 commands)
-5. **Edge Case Operations** - Handle uncommon scenarios (4 commands)
-
-This functional grouping clarifies which commands serve which purpose, making it easier to prioritize development and identify dependencies.
-
-## Implementation Plan for git-exec Enhancement
-
-Based on the existing codebase analysis, the following enhancements are needed to complete git-exec for VCS service use:
-
-### Current State Assessment
-
-The git-exec library at `/Users/erik/code/instruqt/git-exec` has been **significantly enhanced** and is now **98% complete** with:
-
-**✅ Already Implemented (24+ commands)**:
-- Core operations: Clone, Init, Add, Commit, Status, Fetch, Push, Reset
-- Remote management: AddRemote, RemoveRemote, ListRemotes
-- Branch operations: ListBranches, CreateBranch, SetUpstream  
-- Repository inspection: Log, Show, Diff (with complex parsing)
-- Tag creation: Tag
-- Advanced operations: Pull with merge result parsing
-
-**✅ Infrastructure Complete**:
-- ✅ **NEW**: Modernized package structure (`pkg/git/commands/`, `pkg/git/types/`, `pkg/git/errors/`)
-- ✅ **NEW**: Type-safe options pattern with `Option func(*Command)` 
-- ✅ **NEW**: Reusable command infrastructure with centralized execution
-- Command execution framework with working directory support
-- Sophisticated error handling and output parsing
-- Structured types for all Git objects
-- Environment variable support for authentication
-
-**✅ Recent Major Enhancements**:
-- ✅ **Refactored Architecture**: Moved from flat file structure to organized package hierarchy
-- ✅ **Options Pattern**: All commands now use type-safe functional options
-- ✅ **Command Reusability**: Central `Command` struct eliminates code duplication
-- ✅ **Enhanced Authentication**: Structured token-based auth with environment variables
-- ✅ **Improved Error Handling**: Structured `GitError` types with exit codes and stderr capture
-
-### Phase 1: Modernize Interface Patterns ~~(5-6 hours)~~ ✅ **COMPLETED**
-
-#### 1.1 ✅ Implement Options Pattern ~~(2-3 hours)~~ **COMPLETED**
-**Previous Issue**: Commands used variadic string parameters
-```go
-// Old approach
-git.Clone(url, "--bare", "--branch", "main")
-git.Init("--bare")
-```
-
-**✅ Current Implementation**: Type-safe options pattern
-```go
-// New approach implemented in pkg/git/commands/
-git.Clone(url, path, WithBare(), WithBranch("main"), WithAuth(token))
-git.Init(path, WithBare())
-```
-
-**✅ Completed Implementation**:
-1. ✅ Defined `Option func(*Command)` type in `pkg/git/commands/command.go:27`
-2. ✅ Created generic option constructors: `WithAuth()`, `WithUser()`, `WithTimeout()`, `WithQuiet()`, etc.
-3. ✅ Updated all command interfaces to accept `...commands.Option` parameters
-4. ✅ Added VCS-specific options for authentication, environment variables, and working directories
-
-**✅ Implemented Generic Options**:
-- `WithTimeout(duration)` - Custom command timeouts
-- `WithAuth(token)` - GitHub token authentication
-- `WithUser(name, email)` - Git user attribution
-- `WithEnv(key, value)` - Environment variables
-- `WithWorkingDirectory(dir)` - Custom working directory
-- `WithStdin(input)` - Command input
-- `WithQuiet()` / `WithVerbose()` - Output control
-- `WithArgs(args...)` - Escape hatch for unsupported options
-
-**✅ Reusable Command Infrastructure**:
-- Central `Command` struct with execution logic
-- `Execute()` and `ExecuteCombined()` methods
-- Proper error handling with structured `GitError` types
-- Context-based timeout support
-- Environment variable and authentication handling
-
-#### 1.2 Implement Session Management (3-4 hours)
-**Target API**:
-```go
-// Create session with persistent configuration
-session, err := git.NewSession(sessionPath,
-    WithUser("jane@instruqt.com", "Jane Developer"),
-    WithInstruqtMetadata(userID, sessionID, timestamp),
+// Create a new session with persistent configuration
+// NewSession automatically detects existing repositories or creates new ones
+session, err := git.NewSession("/path/to/project",
+    git.WithUser("Jane Developer", "jane@instruqt.com"),
+    git.WithInstruqtMetadata("user-123", "session-456", time.Now()),
+    git.WithMetadata("track", "git-basics"),
+    git.WithMetadata("environment", "production"),
+    git.WithMetadata("project", "web-app"),
+    git.WithMetadata("team", "frontend"),
 )
 
-// Load existing session automatically  
-session, err := git.LoadSession(sessionPath)
+// All operations automatically use the session's user context
+err = session.Add([]string{"file.txt"})
+err = session.Commit("Fix authentication bug") // Automatically uses Jane Developer as author
 
-// All operations inherit correct user context
-session.Add("file.txt")
-session.Commit("Fix bug") // Automatically correct author/committer
+// Load an existing session (e.g., after service restart)
+session, err = git.LoadSession("/path/to/project")
+config := session.GetConfig()
+fmt.Printf("Session ID: %s, User: %s\n", config.SessionID, config.UserName)
+fmt.Printf("Project: %s, Environment: %s\n", 
+    config.Metadata["project"], config.Metadata["environment"])
+
+// Clone a repository using session context
+// Create session first, then clone into it
+cloneSession, err := git.NewSession("/path/to/clone-target",
+    git.WithUser("John Dev", "john@instruqt.com"),
+    git.WithInstruqtMetadata("user-789", "session-012", time.Now()),
+    git.WithMetadata("source", "github-clone"),
+)
+// NewSession creates empty directory, remove .git so we can clone
+os.RemoveAll("/path/to/clone-target/.git") 
+err = cloneSession.Clone("https://github.com/user/repo", "/path/to/clone-target")
+
+// Validate a session
+err = git.ValidateSession("/path/to/project")
+if err != nil {
+    log.Printf("Invalid session: %v", err)
+}
+
+// Get session information
+info, err := git.GetSessionInfo("/path/to/project")
+fmt.Printf("User ID: %s, Session ID: %s\n", info.UserID, info.SessionID)
+
+// Update user information in a session
+err = session.UpdateUser("Jane Smith", "jane.smith@instruqt.com")
+
+// Destroy session-specific configuration
+err = session.Destroy()
 ```
 
-**Implementation Steps**:
-1. Add session-specific Git config management (internally using `git config` commands)
-2. Implement `NewSession()` - clone repository + write session metadata to `.git/config`
-3. Implement `LoadSession()` - read `.git/config` and restore session context
-4. Add session validation and expiration logic
-5. Ensure all Git operations inherit session user context
+### Basic Repository Operations
 
-### Phase 2: Complete Missing Commands (2-3 hours)
+```go
+// Create a new git instance (without session management)
+git, err := git.NewGit()
+if err != nil {
+    log.Fatal(err)
+}
 
-#### 2.1 Fix Stub Implementations
-**Commands with broken implementations** (currently use `git x`):
-- `Checkout()` - Critical for branch switching in sessions
-- `Merge()` - Essential for conflict resolution  
-- `Config()` - Needed for session persistence (internal use)
+// Initialize a repository
+err = git.Init("/path/to/repo", InitWithBare())
 
-#### 2.2 Add Missing VCS Commands
-**Required for complete VCS functionality**:
-- `DeleteBranch(branch)` - Remove local branches
-- `ListTags()` - Get all repository tags
-- `PushTags(remote)` - Push tags to GitHub
-- `DeleteRemoteTag(remote, tag)` - Handle tag deletion events
+// Clone a repository
+err = git.Clone("https://github.com/user/repo", "/local/path",
+    CloneWithBranch("main"),
+    WithAuth(githubToken))
 
-### Phase 3: Integration & Testing (2-3 hours)
+// Set working directory for subsequent operations
+git.SetWorkingDirectory("/local/path")
+```
 
-#### 3.1 Update Existing Tests
-1. Modify existing tests to use new options pattern
-2. Add comprehensive session management tests
-3. Test authentication flow with token-based auth
+### Working with Files
 
-#### 3.2 Add VCS-Specific Tests  
-1. Test session persistence across service restarts
-2. Test conflict resolution workflow with session context
-3. Integration tests with bare repository operations
+```go
+// Add files (session automatically applies user context)
+err = session.Add([]string{"*.go", "README.md"})
 
-### Implementation Priority
+// Check status
+files, err := session.Status(StatusWithPorcelain())
+for _, file := range files {
+    fmt.Printf("%s: %s\n", file.Path, file.Status)
+}
 
-1. **Options Pattern First** - Establishes foundation for all commands
-2. **Session Management Second** - Core VCS service requirement
-3. **Complete Missing Commands Third** - Fills gaps in functionality
-4. **Testing Last** - Validates everything works together
+// Commit changes (session user context applied automatically)
+err = session.Commit("Update documentation", CommitWithSignoff())
 
-### ✅ **Progress Update - Major Milestones Completed**
+// Or use temporary config for one-off operations
+err = git.Commit("Quick fix",
+    commands.WithConfig("user.name", "Temp Worker"),
+    commands.WithConfig("user.email", "temp@example.com"),
+    CommitWithSignoff())
 
-**Completed Effort**: ~6-8 hours of the original 9-13 hour estimate
+// Multiple config values at once
+configs := map[string]string{
+    "user.name":     "Jane Developer",
+    "user.email":    "jane@example.com",
+    "commit.gpgsign": "false",
+}
+err = git.Commit("Multi-config commit", commands.WithConfigs(configs))
+```
 
-The refactoring has successfully completed the two most complex phases:
-- ✅ **Phase 1.1**: Options pattern implementation - **COMPLETED**
-- ✅ **Infrastructure**: Reusable command system - **COMPLETED** 
-- ✅ **Architecture**: Modern package organization - **COMPLETED**
+### Branch Management
 
-**Remaining Effort**: ~3-5 hours for session management and final command completions
+```go
+// List branches
+branches, err := git.ListBranches(BranchWithRemotes())
+for _, branch := range branches {
+    if branch.IsCurrent {
+        fmt.Printf("* %s\n", branch.Name)
+    } else {
+        fmt.Printf("  %s\n", branch.Name)
+    }
+}
 
-The existing codebase now provides a modern, type-safe foundation with sophisticated parsing and execution infrastructure. The remaining work focuses on session persistence and filling any gaps in command implementations.
+// Create and checkout branch
+err = git.CreateBranch("feature-xyz", BranchWithTrack("origin/main"))
+err = git.Checkout(CheckoutWithBranch("feature-xyz"))
 
-## Integration with VCS Service
+// Push with upstream
+err = git.Push(PushWithRemote("origin"), 
+    PushWithBranch("feature-xyz"),
+    PushWithSetUpstream())
+```
 
-Once enhanced, git-exec will directly support VCS service operations:
+### Remote Operations
 
-**Repository Synchronization**: Clone, fetch, and push operations with proper authentication.
-**Conflict Resolution**: Parse conflicts and apply user resolutions during publishing.
-**Session Management**: Isolated user workspaces with automatic user attribution.
-**Bare Repository Management**: Authoritative repository operations for the VCS system.
+```go
+// Add remote
+err = git.AddRemote("upstream", "https://github.com/upstream/repo")
 
-The library provides the foundation for reliable, type-safe Git operations that the VCS service requires for production version control workflows.
+// Fetch from remote
+remotes, err := git.Fetch(
+    FetchWithRemote("upstream"),
+    FetchWithPrune(),
+    FetchWithTags())
+
+// Pull changes
+result, err := git.Pull(PullWithRebase())
+if result != nil && !result.Success {
+    fmt.Println("Conflicts:", result.Conflicts)
+}
+```
+
+### Inspection Operations
+
+```go
+// View commit history
+logs, err := git.Log(
+    LogWithMaxCount(10),
+    LogWithOneline(),
+    LogWithGraph())
+
+for _, log := range logs {
+    fmt.Printf("%s %s - %s\n", 
+        log.Hash[:7], 
+        log.Author.Name, 
+        log.Message)
+}
+
+// Show specific commit
+commit, err := git.Show("HEAD~1", ShowWithStat())
+
+// View differences
+diffs, err := git.Diff(
+    DiffWithNameOnly(),
+    DiffWithCommit("HEAD~1", "HEAD"))
+```
+
+## Testing
+
+The library uses testify for assertions and mockery for mocks:
+
+```go
+func TestAdd(t *testing.T) {
+    g := &git{path: "git", wd: "/test/repo"}
+    
+    // Test basic add
+    err := g.Add([]string{"file.txt"})
+    require.NoError(t, err)
+    
+    // Test with options
+    err = g.Add([]string{"*.go"}, 
+        AddWithDryRun(),
+        AddWithVerbose())
+    require.NoError(t, err)
+}
+```
+
+## Architecture
+
+### Package Structure
+
+```
+pkg/git/
+├── git.go                 # Main Git interface definition
+├── command.go             # Command interface definition
+├── commands/
+│   ├── git.go            # Git implementation
+│   ├── command.go        # Command execution logic
+│   ├── parser.go         # Output parsing utilities
+│   ├── add.go            # Add command implementation
+│   ├── branch.go         # Branch operations
+│   ├── checkout.go       # Checkout implementation
+│   ├── clone.go          # Clone implementation
+│   ├── commit.go         # Commit implementation
+│   ├── diff.go           # Diff implementation
+│   ├── fetch.go          # Fetch implementation
+│   ├── init.go           # Init implementation
+│   ├── log.go            # Log implementation
+│   ├── merge.go          # Merge implementation
+│   ├── misc.go           # Misc commands (config, reflog, etc.)
+│   ├── pull.go           # Pull implementation
+│   ├── push.go           # Push implementation
+│   ├── rebase.go         # Rebase implementation
+│   ├── remote.go         # Remote management
+│   ├── reset.go          # Reset implementation
+│   ├── show.go           # Show implementation
+│   ├── status.go         # Status implementation
+│   └── tag.go            # Tag operations
+├── types/
+│   └── types.go          # Structured types for Git objects
+├── errors/
+│   └── errors.go         # Error types and handling
+├── mocks/
+│   └── command.go        # Mock implementations for testing
+└── test/
+    └── *_test.go         # Integration tests
+```
+
+### Command Execution Flow
+
+1. User calls interface method (e.g., `git.Add(files, options...)`)
+2. Implementation creates command with `newCommand("add", args...)`
+3. Options are applied via `ApplyOptions(opts...)`
+4. Command is executed via `Execute()` or `ExecuteCombined()`
+5. Output is parsed into structured types
+6. Results or errors are returned to user
+
+## Future Enhancements
+
+### High Priority
+
+1. **Complete Stub Implementations**:
+   - `Config()` get/set operations  
+   - `Checkout()` output parsing
+   - Enhanced `Rebase()` with conflict handling
+
+### Medium Priority
+
+1. **Bare Repository Support**:
+   - Specific bare repository operations
+   - Reference management without working directory
+
+2. **Enhanced Authentication**:
+   - Credential helper integration
+   - Token refresh mechanisms
+   - SSH key support
+
+3. **Performance Optimizations**:
+   - Command batching
+   - Output streaming for large operations
+   - Parallel operations support
+
+### Low Priority
+
+1. **Additional Commands**:
+   - Stash operations
+   - Bisect support
+   - Archive creation
+   - Bundle operations
+
+2. **Advanced Features**:
+   - Progress callbacks
+   - Custom merge strategies
+   - Hook management
+
+## VCS Service Integration
+
+The library is designed to support the Instruqt VCS service requirements:
+
+**Repository Synchronization**: Full support for clone, fetch, and push with authentication.
+
+**Publishing Workflow**: Add, commit, and merge operations with structured error handling.
+
+**Branch Management**: Complete branch and tag operations for multi-branch support.
+
+**Remote Management**: Full remote configuration for GitHub integration.
+
+**User Attribution**: User context support via options for proper commit attribution.
+
+The library provides a solid foundation for building reliable version control workflows with type safety, structured errors, and comprehensive Git functionality.

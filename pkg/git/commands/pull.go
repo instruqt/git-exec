@@ -1,4 +1,5 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 import (
 	"regexp"
@@ -7,11 +8,11 @@ import (
 )
 
 // Pull incorporates changes from a remote repository into the current branch
-func (g *git) Pull(opts ...Option) (*types.MergeResult, error) {
+func (g *git) Pull(opts ...gitpkg.Option) (*types.MergeResult, error) {
 	cmd := g.newCommand("pull")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	output, err := cmd.Execute()
 	if err != nil {
@@ -23,8 +24,7 @@ func (g *git) Pull(opts ...Option) (*types.MergeResult, error) {
 	pullMatches := pullRegex.FindAllStringSubmatch(string(output), -1)
 
 	result := &types.MergeResult{
-		DiffStats: []types.DiffStat{},
-		DiffModes: []types.DiffMode{},
+		Success: true,
 	}
 
 	for _, pullMatch := range pullMatches {
@@ -35,21 +35,15 @@ func (g *git) Pull(opts ...Option) (*types.MergeResult, error) {
 			}
 		}
 
-		result.StartCommit = pull["start_commit"]
-		result.EndCommit = pull["end_commit"]
-		result.Method = pull["method"]
-
-		diffStats, err := parseDiffStats(pull["files"])
-		if err != nil {
-			return nil, err
+		if pull["method"] == "Fast-forward" {
+			result.FastForward = true
 		}
-		result.DiffStats = append(result.DiffStats, diffStats...)
-
-		diffModes, err := parseDiffModes(pull["modes"])
-		if err != nil {
-			return nil, err
+		if pull["method"] != "" {
+			result.Strategy = pull["method"]
 		}
-		result.DiffModes = append(result.DiffModes, diffModes...)
+
+		// Parse merge output using existing merge parser
+		g.parseMergeOutput(string(output), result)
 	}
 
 	return result, nil
@@ -58,61 +52,61 @@ func (g *git) Pull(opts ...Option) (*types.MergeResult, error) {
 // Pull-specific options
 
 // PullWithRemote specifies which remote to pull from
-func PullWithRemote(remote string) Option {
+func PullWithRemote(remote string) gitpkg.Option {
 	return WithArgs(remote)
 }
 
 // PullWithBranch specifies which branch to pull
-func PullWithBranch(branch string) Option {
+func PullWithBranch(branch string) gitpkg.Option {
 	return WithArgs(branch)
 }
 
 // PullWithRemoteAndBranch specifies both remote and branch
-func PullWithRemoteAndBranch(remote, branch string) Option {
+func PullWithRemoteAndBranch(remote, branch string) gitpkg.Option {
 	return WithArgs(remote, branch)
 }
 
 // PullWithRebase rebases the current branch on top of the upstream
-func PullWithRebase() Option {
+func PullWithRebase() gitpkg.Option {
 	return WithArgs("--rebase")
 }
 
 // PullWithNoRebase merges the upstream into the current branch (default)
-func PullWithNoRebase() Option {
+func PullWithNoRebase() gitpkg.Option {
 	return WithArgs("--no-rebase")
 }
 
 // PullWithFFOnly only updates if the merge can be resolved as a fast-forward
-func PullWithFFOnly() Option {
+func PullWithFFOnly() gitpkg.Option {
 	return WithArgs("--ff-only")
 }
 
 // PullWithNoFF creates a merge commit even when fast-forward is possible
-func PullWithNoFF() Option {
+func PullWithNoFF() gitpkg.Option {
 	return WithArgs("--no-ff")
 }
 
 // PullWithSquash creates a single commit instead of merging
-func PullWithSquash() Option {
+func PullWithSquash() gitpkg.Option {
 	return WithArgs("--squash")
 }
 
 // PullWithStrategy specifies merge strategy
-func PullWithStrategy(strategy string) Option {
+func PullWithStrategy(strategy string) gitpkg.Option {
 	return WithArgs("--strategy", strategy)
 }
 
 // PullWithAll pulls from all remotes
-func PullWithAll() Option {
+func PullWithAll() gitpkg.Option {
 	return WithArgs("--all")
 }
 
 // PullWithTags fetches tags as well
-func PullWithTags() Option {
+func PullWithTags() gitpkg.Option {
 	return WithArgs("--tags")
 }
 
 // PullWithPrune removes remote-tracking references that no longer exist
-func PullWithPrune() Option {
+func PullWithPrune() gitpkg.Option {
 	return WithArgs("--prune")
 }

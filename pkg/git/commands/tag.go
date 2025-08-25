@@ -1,4 +1,5 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 import (
 	"strings"
@@ -7,22 +8,22 @@ import (
 )
 
 // Tag creates, lists, deletes or verifies a tag object
-func (g *git) Tag(name string, opts ...Option) error {
+func (g *git) Tag(name string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("tag", name)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
 }
 
 // ListTags lists all tags in the repository
-func (g *git) ListTags(opts ...Option) ([]string, error) {
+func (g *git) ListTags(opts ...gitpkg.Option) ([]string, error) {
 	cmd := g.newCommand("tag", "-l")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	output, err := cmd.Execute()
 	if err != nil {
@@ -42,25 +43,25 @@ func (g *git) ListTags(opts ...Option) ([]string, error) {
 }
 
 // DeleteTag deletes a local tag
-func (g *git) DeleteTag(name string, opts ...Option) error {
+func (g *git) DeleteTag(name string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("tag", "-d", name)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	_, err := cmd.Execute()
 	return err
 }
 
 // PushTags pushes tags to remote
-func (g *git) PushTags(remote string, opts ...Option) ([]types.Remote, error) {
+func (g *git) PushTags(remote string, opts ...gitpkg.Option) ([]types.Remote, error) {
 	cmd := g.newCommand("push", remote, "--tags")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	// Push writes its output to stderr
-	output, err := cmd.executeWithStderr()
+	output, err := cmd.ExecuteWithStderr()
 	if err != nil {
 		return nil, err
 	}
@@ -71,70 +72,70 @@ func (g *git) PushTags(remote string, opts ...Option) ([]types.Remote, error) {
 }
 
 // DeleteRemoteTag deletes a tag from remote repository
-func (g *git) DeleteRemoteTag(remote, tagName string, opts ...Option) error {
+func (g *git) DeleteRemoteTag(remote, tagName string, opts ...gitpkg.Option) error {
 	cmd := g.newCommand("push", remote, "--delete", "refs/tags/"+tagName)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
-	_, err := cmd.executeWithStderr()
+	_, err := cmd.ExecuteWithStderr()
 	return err
 }
 
 // Tag-specific options
 
 // TagWithAnnotated creates an annotated tag
-func TagWithAnnotated() Option {
+func TagWithAnnotated() gitpkg.Option {
 	return WithArgs("-a")
 }
 
 // TagWithMessage specifies tag message
-func TagWithMessage(message string) Option {
+func TagWithMessage(message string) gitpkg.Option {
 	return WithArgs("-m", message)
 }
 
 // TagWithFile reads message from file
-func TagWithFile(file string) Option {
+func TagWithFile(file string) gitpkg.Option {
 	return WithArgs("-F", file)
 }
 
 // TagWithSign makes a GPG-signed tag
-func TagWithSign() Option {
+func TagWithSign() gitpkg.Option {
 	return WithArgs("-s")
 }
 
 // TagWithLocalUser uses specific GPG key
-func TagWithLocalUser(keyid string) Option {
+func TagWithLocalUser(keyid string) gitpkg.Option {
 	return WithArgs("-u", keyid)
 }
 
 // TagWithForce replaces existing tag
-func TagWithForce() Option {
+func TagWithForce() gitpkg.Option {
 	return WithArgs("-f")
 }
 
 // TagWithDelete deletes existing tags
-func TagWithDelete() Option {
+func TagWithDelete() gitpkg.Option {
 	return WithArgs("-d")
 }
 
 // TagWithVerify verifies GPG signature of given tags
-func TagWithVerify() Option {
+func TagWithVerify() gitpkg.Option {
 	return WithArgs("-v")
 }
 
 // TagWithList lists tags
-func TagWithList() Option {
+func TagWithList() gitpkg.Option {
 	return WithArgs("-l")
 }
 
 // TagWithSort sorts tags
-func TagWithSort(key string) Option {
+func TagWithSort(key string) gitpkg.Option {
 	return WithArgs("--sort=" + key)
 }
 
 // TagWithMerged shows only tags merged into the named commit
-func TagWithMerged(commit string) Option {
+func TagWithMerged(commit string) gitpkg.Option {
 	if commit == "" {
 		return WithArgs("--merged")
 	}
@@ -142,7 +143,7 @@ func TagWithMerged(commit string) Option {
 }
 
 // TagWithNoMerged shows only tags not merged into the named commit
-func TagWithNoMerged(commit string) Option {
+func TagWithNoMerged(commit string) gitpkg.Option {
 	if commit == "" {
 		return WithArgs("--no-merged")
 	}
@@ -150,27 +151,27 @@ func TagWithNoMerged(commit string) Option {
 }
 
 // TagWithContains shows only tags that contain the commit
-func TagWithContains(commit string) Option {
+func TagWithContains(commit string) gitpkg.Option {
 	return WithArgs("--contains", commit)
 }
 
 // TagWithNoContains shows only tags that don't contain the commit
-func TagWithNoContains(commit string) Option {
+func TagWithNoContains(commit string) gitpkg.Option {
 	return WithArgs("--no-contains", commit)
 }
 
 // TagWithPoints shows only tags that point at the object
-func TagWithPoints(object string) Option {
+func TagWithPoints(object string) gitpkg.Option {
 	return WithArgs("--points-at", object)
 }
 
 // TagWithFormat specifies output format
-func TagWithFormat(format string) Option {
+func TagWithFormat(format string) gitpkg.Option {
 	return WithArgs("--format=" + format)
 }
 
 // TagWithColor uses colors in output
-func TagWithColor(when string) Option {
+func TagWithColor(when string) gitpkg.Option {
 	if when == "" {
 		return WithArgs("--color")
 	}
@@ -178,12 +179,12 @@ func TagWithColor(when string) Option {
 }
 
 // TagWithNoColor disables colors in output
-func TagWithNoColor() Option {
+func TagWithNoColor() gitpkg.Option {
 	return WithArgs("--no-color")
 }
 
 // TagWithColumn displays tags in columns
-func TagWithColumn(options string) Option {
+func TagWithColumn(options string) gitpkg.Option {
 	if options == "" {
 		return WithArgs("--column")
 	}
@@ -191,11 +192,11 @@ func TagWithColumn(options string) Option {
 }
 
 // TagWithNoColumn disables column output
-func TagWithNoColumn() Option {
+func TagWithNoColumn() gitpkg.Option {
 	return WithArgs("--no-column")
 }
 
 // TagWithObject creates tag for specific object
-func TagWithObject(object string) Option {
+func TagWithObject(object string) gitpkg.Option {
 	return WithArgs(object)
 }

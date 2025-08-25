@@ -1,4 +1,5 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 import (
 	"regexp"
@@ -8,11 +9,11 @@ import (
 )
 
 // Show shows information about a Git object (commit, tag, etc)
-func (g *git) Show(object string, opts ...Option) (*types.Log, error) {
+func (g *git) Show(object string, opts ...gitpkg.Option) (*types.Log, error) {
 	cmd := g.newCommand("show", "--format=fuller", object)
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	output, err := cmd.Execute()
 	if err != nil {
@@ -60,76 +61,76 @@ func (g *git) Show(object string, opts ...Option) (*types.Log, error) {
 // Show-specific options
 
 // ShowWithFormat specifies output format
-func ShowWithFormat(format string) Option {
+func ShowWithFormat(format string) gitpkg.Option {
 	return WithArgs("--format=" + format)
 }
 
 // ShowWithPretty specifies pretty format
-func ShowWithPretty(format string) Option {
+func ShowWithPretty(format string) gitpkg.Option {
 	return WithArgs("--pretty=" + format)
 }
 
 // ShowWithOneline shows each commit on a single line
-func ShowWithOneline() Option {
+func ShowWithOneline() gitpkg.Option {
 	return WithArgs("--oneline")
 }
 
 // ShowWithShort shows short format
-func ShowWithShort() Option {
+func ShowWithShort() gitpkg.Option {
 	return WithArgs("--short")
 }
 
 // ShowWithMedium shows medium format (default)
-func ShowWithMedium() Option {
+func ShowWithMedium() gitpkg.Option {
 	return WithArgs("--medium")
 }
 
 // ShowWithFull shows full format
-func ShowWithFull() Option {
+func ShowWithFull() gitpkg.Option {
 	return WithArgs("--full")
 }
 
 // ShowWithFuller shows fuller format
-func ShowWithFuller() Option {
+func ShowWithFuller() gitpkg.Option {
 	return WithArgs("--fuller")
 }
 
 // ShowWithRaw shows raw format
-func ShowWithRaw() Option {
+func ShowWithRaw() gitpkg.Option {
 	return WithArgs("--raw")
 }
 
 // ShowWithStat shows diffstat
-func ShowWithStat() Option {
+func ShowWithStat() gitpkg.Option {
 	return WithArgs("--stat")
 }
 
 // ShowWithNameOnly shows only names of changed files
-func ShowWithNameOnly() Option {
+func ShowWithNameOnly() gitpkg.Option {
 	return WithArgs("--name-only")
 }
 
 // ShowWithNameStatus shows names and status of changed files
-func ShowWithNameStatus() Option {
+func ShowWithNameStatus() gitpkg.Option {
 	return WithArgs("--name-status")
 }
 
 // ShowWithNoPatch suppresses diff output
-func ShowWithNoPatch() Option {
+func ShowWithNoPatch() gitpkg.Option {
 	return WithArgs("--no-patch")
 }
 
 // ShowWithPatch shows patch format
-func ShowWithPatch() Option {
+func ShowWithPatch() gitpkg.Option {
 	return WithArgs("--patch")
 }
 
 // ShowWithAbbrevCommit shows abbreviated commit hash
-func ShowWithAbbrevCommit() Option {
+func ShowWithAbbrevCommit() gitpkg.Option {
 	return WithArgs("--abbrev-commit")
 }
 
 // ShowWithNoAbbrevCommit shows full commit hash
-func ShowWithNoAbbrevCommit() Option {
+func ShowWithNoAbbrevCommit() gitpkg.Option {
 	return WithArgs("--no-abbrev-commit")
 }

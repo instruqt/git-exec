@@ -1,4 +1,5 @@
 package commands
+import gitpkg "github.com/instruqt/git-exec/pkg/git"
 
 import (
 	"fmt"
@@ -8,14 +9,14 @@ import (
 )
 
 // Fetch downloads objects and refs from another repository
-func (g *git) Fetch(opts ...Option) ([]types.Remote, error) {
+func (g *git) Fetch(opts ...gitpkg.Option) ([]types.Remote, error) {
 	cmd := g.newCommand("fetch", "-v")
 	
 	// Apply all provided options
-	cmd.applyOptions(opts...)
+	cmd.ApplyOptions(opts...)
 	
 	// Fetch writes its output to stderr
-	output, err := cmd.executeWithStderr()
+	output, err := cmd.ExecuteWithStderr()
 	if err != nil {
 		return nil, err
 	}
@@ -55,51 +56,51 @@ func (g *git) Fetch(opts ...Option) ([]types.Remote, error) {
 // Fetch-specific options
 
 // FetchWithAll fetches all remotes
-func FetchWithAll() Option {
+func FetchWithAll() gitpkg.Option {
 	return WithArgs("--all")
 }
 
 // FetchWithPrune removes remote-tracking references that no longer exist on the remote
-func FetchWithPrune() Option {
+func FetchWithPrune() gitpkg.Option {
 	return WithArgs("--prune")
 }
 
 // FetchWithPruneTags removes local tags that no longer exist on the remote
-func FetchWithPruneTags() Option {
+func FetchWithPruneTags() gitpkg.Option {
 	return WithArgs("--prune-tags")
 }
 
 // FetchWithTags fetches all tags from the remote
-func FetchWithTags() Option {
+func FetchWithTags() gitpkg.Option {
 	return WithArgs("--tags")
 }
 
 // FetchWithNoTags doesn't fetch any tags
-func FetchWithNoTags() Option {
+func FetchWithNoTags() gitpkg.Option {
 	return WithArgs("--no-tags")
 }
 
 // FetchWithDepth limits fetching to the specified number of commits
-func FetchWithDepth(depth int) Option {
+func FetchWithDepth(depth int) gitpkg.Option {
 	return WithArgs("--depth", fmt.Sprintf("%d", depth))
 }
 
 // FetchWithRemote specifies which remote to fetch from
-func FetchWithRemote(remote string) Option {
+func FetchWithRemote(remote string) gitpkg.Option {
 	return WithArgs(remote)
 }
 
 // FetchWithForce forces updates of local branches
-func FetchWithForce() Option {
+func FetchWithForce() gitpkg.Option {
 	return WithArgs("--force")
 }
 
 // FetchWithDryRun shows what would be done without making changes
-func FetchWithDryRun() Option {
+func FetchWithDryRun() gitpkg.Option {
 	return WithArgs("--dry-run")
 }
 
 // FetchWithRefetch re-fetches the entire repository
-func FetchWithRefetch() Option {
+func FetchWithRefetch() gitpkg.Option {
 	return WithArgs("--refetch")
 }
