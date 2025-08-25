@@ -261,3 +261,35 @@ func WithArgs(args ...string) gitpkg.Option {
 		c.AddArgs(args...)
 	}
 }
+
+// WithConfig sets a git config value for the command
+// This adds -c key=value to the git command
+func WithConfig(key, value string) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		// Git config options must come before the subcommand
+		args := c.GetArgs()
+		if len(args) > 0 {
+			// Insert config option before the subcommand
+			newArgs := []string{"-c", fmt.Sprintf("%s=%s", key, value)}
+			newArgs = append(newArgs, args...)
+			c.SetArgs(newArgs)
+		}
+	}
+}
+
+// WithConfigs sets multiple git config values for the command
+func WithConfigs(configs map[string]string) gitpkg.Option {
+	return func(c gitpkg.Command) {
+		args := c.GetArgs()
+		if len(args) > 0 {
+			// Build all config options
+			var configArgs []string
+			for key, value := range configs {
+				configArgs = append(configArgs, "-c", fmt.Sprintf("%s=%s", key, value))
+			}
+			// Insert config options before the subcommand
+			configArgs = append(configArgs, args...)
+			c.SetArgs(configArgs)
+		}
+	}
+}

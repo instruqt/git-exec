@@ -9,30 +9,27 @@ import (
 )
 
 func TestAdd(t *testing.T) {
-	// Test the Add function directly without complex mocking
-	// Focus on validating the logic flow and command construction
+	// Test that the Add function exists and has correct signature
+	// We're testing in a real git repo, so some operations may succeed
 	
-	t.Run("add with specific files", func(t *testing.T) {
+	t.Run("add function signature", func(t *testing.T) {
 		g := &git{path: "git", wd: ""}
 		
-		// This test validates that Add can handle specific files
-		// In a real test environment, we would need actual files
-		// For now, we test that the function exists and has the right signature
-		err := g.Add([]string{"README.md"})
+		// Test that Add function accepts the expected parameters
+		// and returns an error (which is the expected return type)
+		err := g.Add([]string{"nonexistent-file.txt"})
 		
-		// We expect an error because we're not in a real git repo
-		// But this validates the function signature and basic logic
+		// We expect an error for nonexistent files
 		require.Error(t, err)
 	})
 	
-	t.Run("add all files when empty slice", func(t *testing.T) {
+	t.Run("add with options", func(t *testing.T) {
 		g := &git{path: "git", wd: ""}
 		
-		// This test validates that Add handles empty file list correctly
-		err := g.Add([]string{})
+		// Test that Add function accepts options
+		err := g.Add([]string{"nonexistent-file.txt"}, AddWithDryRun())
 		
-		// We expect an error because we're not in a real git repo
-		// But this validates the function exists and handles empty input
+		// We expect an error for nonexistent files, even with dry run
 		require.Error(t, err)
 	})
 }

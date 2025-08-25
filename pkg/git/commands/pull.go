@@ -24,8 +24,7 @@ func (g *git) Pull(opts ...gitpkg.Option) (*types.MergeResult, error) {
 	pullMatches := pullRegex.FindAllStringSubmatch(string(output), -1)
 
 	result := &types.MergeResult{
-		DiffStats: []types.DiffStat{},
-		DiffModes: []types.DiffMode{},
+		Success: true,
 	}
 
 	for _, pullMatch := range pullMatches {
@@ -36,21 +35,15 @@ func (g *git) Pull(opts ...gitpkg.Option) (*types.MergeResult, error) {
 			}
 		}
 
-		result.StartCommit = pull["start_commit"]
-		result.EndCommit = pull["end_commit"]
-		result.Method = pull["method"]
-
-		diffStats, err := parseDiffStats(pull["files"])
-		if err != nil {
-			return nil, err
+		if pull["method"] == "Fast-forward" {
+			result.FastForward = true
 		}
-		result.DiffStats = append(result.DiffStats, diffStats...)
-
-		diffModes, err := parseDiffModes(pull["modes"])
-		if err != nil {
-			return nil, err
+		if pull["method"] != "" {
+			result.Strategy = pull["method"]
 		}
-		result.DiffModes = append(result.DiffModes, diffModes...)
+
+		// Parse merge output using existing merge parser
+		g.parseMergeOutput(string(output), result)
 	}
 
 	return result, nil

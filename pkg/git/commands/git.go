@@ -24,8 +24,8 @@ func NewGit() (*git, error) {
 	}, nil
 }
 
-// NewSession creates a new Git session
-func NewSession() (gitpkg.Git, error) {
+// NewGitInstance creates a new Git instance (basic, no session)
+func NewGitInstance() (gitpkg.Git, error) {
 	return NewGit()
 }
 

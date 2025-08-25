@@ -100,9 +100,62 @@ type Ref struct {
 }
 
 type MergeResult struct {
-	StartCommit string
-	EndCommit   string
-	Method      string
-	DiffStats   []DiffStat
-	DiffModes   []DiffMode
+	Success          bool
+	FastForward      bool
+	MergeCommit      string
+	MergedBranch     string
+	BaseBranch       string
+	Strategy         string
+	ConflictedFiles  []string
+	Conflicts        []ConflictFile
+	Stats            MergeStats
+	AbortReason      string
+}
+
+type MergeStats struct {
+	FilesChanged int
+	Insertions   int
+	Deletions    int
+}
+
+type ConflictFile struct {
+	Path      string
+	Status    ConflictStatus
+	Sections  []ConflictSection
+	Content   string // Raw file content with conflict markers
+}
+
+type ConflictStatus string
+
+const (
+	ConflictStatusBothModified ConflictStatus = "both_modified"
+	ConflictStatusAddedByUs    ConflictStatus = "added_by_us"
+	ConflictStatusAddedByThem  ConflictStatus = "added_by_them"
+	ConflictStatusDeletedByUs  ConflictStatus = "deleted_by_us"
+	ConflictStatusDeletedByThem ConflictStatus = "deleted_by_them"
+	ConflictStatusBothAdded    ConflictStatus = "both_added"
+	ConflictStatusBothDeleted  ConflictStatus = "both_deleted"
+)
+
+type ConflictSection struct {
+	StartLine    int
+	EndLine      int
+	OurContent   string
+	TheirContent string
+	BaseContent  string // Available with diff3 conflict style
+	Resolved     bool
+	Resolution   string // User's resolution
+}
+
+type ConflictResolution struct {
+	FilePath   string
+	Sections   []ResolvedSection
+	UseOurs    bool   // Use our version entirely
+	UseTheirs  bool   // Use their version entirely
+	Custom     bool   // Use custom resolution
+}
+
+type ResolvedSection struct {
+	SectionIndex int
+	Resolution   string // The resolved content for this section
 }
