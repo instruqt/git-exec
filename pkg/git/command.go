@@ -481,10 +481,6 @@ func CheckoutWithCommit(commit string) Option {
 	return WithArgs(commit)
 }
 
-// CheckoutWithCreateBranch creates and checks out a new branch (alias for CheckoutWithCreate)
-func CheckoutWithCreateBranch(branch string) Option {
-	return WithArgs("-b", branch)
-}
 
 // CheckoutWithOrphan creates an orphan branch
 func CheckoutWithOrphan(branch string) Option {

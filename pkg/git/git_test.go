@@ -35,12 +35,17 @@ func TestSessionMockUsage(t *testing.T) {
 	mockSession := mocks.NewMockSession(t)
 
 	// Set up expectations
-	mockSession.On("GetSessionID").Return("test-session-123").Once()
+	mockConfig := &git.SessionConfig{
+		UserName: "Test User",
+		Metadata: map[string]string{"session-id": "test-session-123"},
+	}
+	mockSession.On("GetSessionConfig").Return(mockConfig).Once()
 	mockSession.On("Add", []string{"README.md"}).Return(nil).Once()
 
 	// Use the mock
-	sessionID := mockSession.GetSessionID()
-	assert.Equal(t, "test-session-123", sessionID)
+	config := mockSession.GetSessionConfig()
+	assert.Equal(t, "Test User", config.UserName)
+	assert.Equal(t, "test-session-123", config.Metadata["session-id"])
 
 	err := mockSession.Add([]string{"README.md"})
 	assert.NoError(t, err)

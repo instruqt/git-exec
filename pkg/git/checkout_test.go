@@ -92,7 +92,7 @@ func TestCheckout_CreateNewBranch(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test checkout with create new branch
-	result, err := gitInstance.Checkout(git.CheckoutWithCreateBranch("new-feature"))
+	result, err := gitInstance.Checkout(git.CheckoutWithCreate("new-feature"))
 	require.NoError(t, err)
 	require.True(t, result.Success)
 	require.Equal(t, "new-feature", result.Branch)

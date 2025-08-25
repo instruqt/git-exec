@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 )
 
 // SessionConfig represents configuration for a Git session
@@ -14,15 +13,10 @@ type SessionConfig struct {
 	UserName  string
 	UserEmail string
 	
-	// Instruqt metadata
-	UserID    string
-	SessionID string
-	Created   time.Time
-	
 	// Session properties
 	WorkingDirectory string
 	
-	// Additional metadata (key-value pairs)
+	// Metadata (key-value pairs for any use case)
 	Metadata map[string]string
 }
 
@@ -33,8 +27,6 @@ type Session interface {
 	// Session-specific methods
 	GetSessionConfig() *SessionConfig
 	UpdateUser(name, email string) error
-	GetSessionID() string
-	GetUserID() string
 	IsValid() bool
 	InitRepository() error
 	Destroy() error
@@ -44,24 +36,16 @@ type Session interface {
 type SessionOption func(*SessionConfig)
 
 // WithSessionUser sets the user for the session
-func WithSessionUser(name, email string) SessionOption {
+func SessionWithUser(name, email string) SessionOption {
 	return func(c *SessionConfig) {
 		c.UserName = name
 		c.UserEmail = email
 	}
 }
 
-// WithInstruqtMetadata sets Instruqt-specific metadata
-func WithInstruqtMetadata(userID, sessionID string, created time.Time) SessionOption {
-	return func(c *SessionConfig) {
-		c.UserID = userID
-		c.SessionID = sessionID
-		c.Created = created
-	}
-}
 
-// WithMetadata adds custom metadata to the session
-func WithMetadata(key, value string) SessionOption {
+// SessionWithMetadata adds custom metadata to the session
+func SessionWithMetadata(key, value string) SessionOption {
 	return func(c *SessionConfig) {
 		if c.Metadata == nil {
 			c.Metadata = make(map[string]string)
@@ -70,8 +54,8 @@ func WithMetadata(key, value string) SessionOption {
 	}
 }
 
-// WithSessionWorkingDirectory sets the working directory for the session
-func WithSessionWorkingDirectory(dir string) SessionOption {
+// SessionWithWorkingDirectory sets the working directory for the session
+func SessionWithWorkingDirectory(dir string) SessionOption {
 	return func(c *SessionConfig) {
 		c.WorkingDirectory = dir
 	}
@@ -94,7 +78,6 @@ func NewSession(sessionPath string, opts ...SessionOption) (Session, error) {
 	// Initialize session config
 	config := &SessionConfig{
 		WorkingDirectory: sessionPath,
-		Created:          time.Now(),
 		Metadata:         make(map[string]string),
 	}
 	
@@ -198,8 +181,8 @@ func ValidateSession(sessionPath string) error {
 	}
 	
 	config := s.GetSessionConfig()
-	if config.SessionID == "" {
-		return fmt.Errorf("session ID is missing")
+	if config.UserName == "" {
+		return fmt.Errorf("user name is missing")
 	}
 	
 	return nil
@@ -227,15 +210,6 @@ func (s *sessionImpl) UpdateUser(name, email string) error {
 	return s.persistConfig()
 }
 
-// GetSessionID returns the session ID
-func (s *sessionImpl) GetSessionID() string {
-	return s.config.SessionID
-}
-
-// GetUserID returns the user ID
-func (s *sessionImpl) GetUserID() string {
-	return s.config.UserID
-}
 
 // IsValid checks if the session is still valid
 func (s *sessionImpl) IsValid() bool {
@@ -261,11 +235,6 @@ func (s *sessionImpl) InitRepository() error {
 
 // Destroy removes session-specific configuration
 func (s *sessionImpl) Destroy() error {
-	// Remove Instruqt-specific configuration
-	if err := s.removeConfig("instruqt"); err != nil {
-		return fmt.Errorf("failed to remove instruqt config: %w", err)
-	}
-	
 	// Remove session metadata
 	if err := s.removeConfig("session"); err != nil {
 		return fmt.Errorf("failed to remove session config: %w", err)
@@ -310,26 +279,7 @@ func (s *sessionImpl) persistConfig() error {
 		}
 	}
 	
-	// Set Instruqt metadata
-	if s.config.UserID != "" {
-		if err := s.setConfigValue("instruqt.userid", s.config.UserID); err != nil {
-			return fmt.Errorf("failed to set instruqt.userid: %w", err)
-		}
-	}
-	
-	if s.config.SessionID != "" {
-		if err := s.setConfigValue("instruqt.sessionid", s.config.SessionID); err != nil {
-			return fmt.Errorf("failed to set instruqt.sessionid: %w", err)
-		}
-	}
-	
-	if !s.config.Created.IsZero() {
-		if err := s.setConfigValue("instruqt.created", s.config.Created.Format(time.RFC3339)); err != nil {
-			return fmt.Errorf("failed to set instruqt.created: %w", err)
-		}
-	}
-	
-	// Set additional metadata
+	// Set metadata
 	for key, value := range s.config.Metadata {
 		configKey := fmt.Sprintf("session.%s", key)
 		if err := s.setConfigValue(configKey, value); err != nil {
@@ -351,20 +301,6 @@ func (s *sessionImpl) loadConfig() error {
 		s.config.UserEmail = email
 	}
 	
-	// Load Instruqt metadata
-	if userID, err := s.getConfigValue("instruqt.userid"); err == nil {
-		s.config.UserID = userID
-	}
-	
-	if sessionID, err := s.getConfigValue("instruqt.sessionid"); err == nil {
-		s.config.SessionID = sessionID
-	}
-	
-	if created, err := s.getConfigValue("instruqt.created"); err == nil {
-		if t, err := time.Parse(time.RFC3339, created); err == nil {
-			s.config.Created = t
-		}
-	}
 	
 	// Load session metadata
 	cmd := s.newCommand("config", "--get-regexp", "^session\\.")

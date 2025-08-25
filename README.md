@@ -182,7 +182,7 @@ fmt.Printf("Previous HEAD: %s\n", result.PreviousHEAD)
 fmt.Printf("New HEAD: %s\n", result.NewHEAD)
 
 // Create and checkout new branch
-result, err = gitInstance.Checkout(git.CheckoutWithCreateBranch("new-feature"))
+result, err = gitInstance.Checkout(git.CheckoutWithCreate("new-feature"))
 if err != nil {
     log.Fatal(err)
 }

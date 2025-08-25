@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/instruqt/git-exec/pkg/git"
 )
@@ -23,16 +22,18 @@ func main() {
 	sessionPath := filepath.Join(tempDir, "project-session")
 
 	session, err := git.NewSession(sessionPath,
-		git.WithSessionUser("Alice Developer", "alice@company.com"),
-		git.WithInstruqtMetadata("user-123", "session-456", time.Now()),
-		git.WithMetadata("project", "web-app"),
-		git.WithMetadata("team", "frontend"),
+		git.SessionWithUser("Alice Developer", "alice@company.com"),
+		git.SessionWithMetadata("user-id", "user-123"),
+		git.SessionWithMetadata("session-id", "session-456"),
+		git.SessionWithMetadata("project", "web-app"),
+		git.SessionWithMetadata("team", "frontend"),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("Session created: %s\n", session.GetSessionID())
+	config := session.GetSessionConfig()
+	fmt.Printf("Session created for: %s\n", config.UserName)
 
 	// Create and commit a file - user context is automatically applied
 	readmeFile := filepath.Join(sessionPath, "README.md")
@@ -57,9 +58,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	config := loadedSession.GetSessionConfig()
-	fmt.Printf("Loaded session for: %s <%s>\n", config.UserName, config.UserEmail)
-	fmt.Printf("Project: %s, Team: %s\n", config.Metadata["project"], config.Metadata["team"])
+	loadedConfig := loadedSession.GetSessionConfig()
+	fmt.Printf("Loaded session for: %s <%s>\n", loadedConfig.UserName, loadedConfig.UserEmail)
+	fmt.Printf("Project: %s, Team: %s\n", loadedConfig.Metadata["project"], loadedConfig.Metadata["team"])
 
 	// Update user information
 	err = loadedSession.UpdateUser("Alice Smith", "alice.smith@company.com")
