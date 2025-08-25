@@ -30,7 +30,7 @@ type Git interface {
 	CreateBranch(branch string, options ...Option) error
 	DeleteBranch(branch string, options ...Option) error
 	SetUpstream(branch string, remote string, options ...Option) error
-	Checkout(options ...Option) error
+	Checkout(options ...Option) (*types.CheckoutResult, error)
 	Tag(name string, options ...Option) error
 	ListTags(options ...Option) ([]string, error)
 	DeleteTag(name string, options ...Option) error

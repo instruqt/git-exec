@@ -36,7 +36,7 @@ footer`
 	// Create branch and modify file
 	err = gitInstance.CreateBranch("feature-branch")
 	require.NoError(t, err)
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature-branch"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature-branch"))
 	require.NoError(t, err)
 	
 	featureContent := `header
@@ -51,9 +51,9 @@ footer`
 	require.NoError(t, err)
 	
 	// Switch back to main and make conflicting changes
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
-		err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
+		_, err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
 	}
 	require.NoError(t, err)
 	
@@ -108,7 +108,7 @@ func TestFastForwardMerge(t *testing.T) {
 	// Create branch and add new file (no conflicts possible)
 	err = gitInstance.CreateBranch("feature-addition")
 	require.NoError(t, err)
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature-addition"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature-addition"))
 	require.NoError(t, err)
 	
 	// Add new file that doesn't exist on main
@@ -121,9 +121,9 @@ func TestFastForwardMerge(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Switch back to main
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
-		err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
+		_, err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
 	}
 	require.NoError(t, err)
 	
@@ -160,7 +160,7 @@ func TestNoFastForwardMerge(t *testing.T) {
 	// Create branch and add file
 	err = gitInstance.CreateBranch("feature-no-ff")
 	require.NoError(t, err)
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature-no-ff"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature-no-ff"))
 	require.NoError(t, err)
 	
 	featureFile := filepath.Join(tempDir, "no-ff-feature.txt")
@@ -172,9 +172,9 @@ func TestNoFastForwardMerge(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Switch back to main
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
-		err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
+		_, err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
 	}
 	require.NoError(t, err)
 	

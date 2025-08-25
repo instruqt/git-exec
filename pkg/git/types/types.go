@@ -159,3 +159,19 @@ type ResolvedSection struct {
 	SectionIndex int
 	Resolution   string // The resolved content for this section
 }
+
+// CheckoutResult represents the result of a checkout operation
+type CheckoutResult struct {
+	Success          bool     // Whether checkout was successful
+	PreviousHEAD     string   // Previous HEAD reference
+	NewHEAD          string   // New HEAD reference
+	Branch           string   // Branch name (if checking out a branch)
+	Commit           string   // Commit hash (if checking out a commit)
+	DetachedHEAD     bool     // Whether in detached HEAD state
+	NewBranch        bool     // Whether a new branch was created
+	ModifiedFiles    []string // Files that were modified during checkout
+	RestoredFiles    []string // Files that were restored during checkout
+	UntrackedFiles   []string // Untracked files that would be overwritten
+	Warning          string   // Any warning messages
+	UpstreamBranch   string   // Upstream branch set for new branches
+}
