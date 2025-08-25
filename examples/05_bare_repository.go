@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 
 	"github.com/instruqt/git-exec/pkg/git"
-	"github.com/instruqt/git-exec/pkg/git/types"
 )
 
 func main() {
@@ -91,81 +90,55 @@ func main() {
 	}
 	fmt.Printf("Server repository is bare: %v\n", isBare)
 
-	// List all references
-	refs, err := gitInstance.ListRefs()
+	// List branches and tags using existing methods
+	branches, err := gitInstance.ListBranches()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Printf("\nReferences in bare repository:\n")
-	for _, ref := range refs {
-		fmt.Printf("  %s (%s) -> %s\n", ref.Name, ref.Type, ref.Commit[:8])
+	fmt.Printf("\nBranches in bare repository:\n")
+	for _, branch := range branches {
+		fmt.Printf("  %s\n", branch.Name)
 	}
 
-	// Get the first commit hash for demonstration
-	logs, err := gitInstance.Log(git.LogWithMaxCount("3"))
+	// Create a new branch in bare repository
+	err = gitInstance.CreateBranch("v1.0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("\nCreated new branch 'v1.0'\n")
+
+	// Create a tag in bare repository  
+	err = gitInstance.Tag("release-1.0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Created tag 'release-1.0'\n")
+
+	// List tags
+	tags, err := gitInstance.ListTags()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if len(logs) >= 2 {
-		firstCommit := logs[len(logs)-1].Commit // Oldest commit
-		secondCommit := logs[len(logs)-2].Commit
-
-		// Create a new reference pointing to the first commit
-		fmt.Printf("\nCreating new reference 'refs/heads/v1.0' pointing to first commit\n")
-		err = gitInstance.UpdateRef("refs/heads/v1.0", firstCommit)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Create a tag reference
-		fmt.Printf("Creating tag 'refs/tags/release-1.0' pointing to second commit\n")
-		err = gitInstance.UpdateRef("refs/tags/release-1.0", secondCommit)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// List references again
-		refs, err = gitInstance.ListRefs()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Printf("\nUpdated references:\n")
-		for _, ref := range refs {
-			switch ref.Type {
-			case types.ReferenceTypeBranch:
-				fmt.Printf("  [Branch] %s -> %s\n", ref.Name, ref.Commit[:8])
-			case types.ReferenceTypeTag:
-				fmt.Printf("  [Tag]    %s -> %s\n", ref.Name, ref.Commit[:8])
-			default:
-				fmt.Printf("  [%s] %s -> %s\n", ref.Type, ref.Name, ref.Commit[:8])
-			}
-		}
-
-		// Delete a reference
-		fmt.Printf("\nDeleting reference 'refs/heads/v1.0'\n")
-		err = gitInstance.DeleteRef("refs/heads/v1.0")
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Verify deletion
-		refs, err = gitInstance.ListRefs()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		deleted := true
-		for _, ref := range refs {
-			if ref.Name == "refs/heads/v1.0" {
-				deleted = false
-				break
-			}
-		}
-		fmt.Printf("Reference successfully deleted: %v\n", deleted)
+	fmt.Printf("\nTags in bare repository:\n")
+	for _, tag := range tags {
+		fmt.Printf("  %s\n", tag)
 	}
+
+	// Delete the branch
+	err = gitInstance.DeleteBranch("v1.0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("\nDeleted branch 'v1.0'\n")
+
+	// Delete the tag
+	err = gitInstance.DeleteTag("release-1.0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("Deleted tag 'release-1.0'\n")
 
 	// Create a bare repository from scratch
 	bareScratch := filepath.Join(tempDir, "scratch.git")
@@ -188,7 +161,6 @@ func main() {
 	fmt.Printf("\nKey concepts demonstrated:\n")
 	fmt.Printf("- Detecting bare vs non-bare repositories\n")
 	fmt.Printf("- Creating bare repositories with Init and Clone\n")
-	fmt.Printf("- Managing references directly without working directory\n")
-	fmt.Printf("- Creating, updating, and deleting refs\n")
-	fmt.Printf("- Working with different reference types (branches, tags)\n")
+	fmt.Printf("- Working with branches and tags in bare repositories\n")
+	fmt.Printf("- All standard Git operations work in bare repos (no working directory needed)\n")
 }

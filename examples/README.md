@@ -49,15 +49,14 @@ This directory contains comprehensive examples demonstrating the git-exec librar
 **Key concepts**: Branch workflows, feature development, branch lifecycle management
 
 ### 05_bare_repository.go
-**Bare Repository Operations and Reference Management**
+**Bare Repository Operations**
 - Creating bare repositories with Init and Clone
 - Detecting bare vs non-bare repositories
-- Direct reference manipulation without working directory
-- Creating, updating, and deleting refs
-- Working with different reference types (branches, tags)
-- Server-side Git operations
+- Working with branches and tags in bare repos
+- Server-side Git operations without working directory
+- All standard Git operations in bare context
 
-**Key concepts**: Bare repositories, reference management, server-side operations
+**Key concepts**: Bare repositories, server-side operations, centralized workflows
 
 ## Running the Examples
 

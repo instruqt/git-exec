@@ -51,9 +51,6 @@ type Git interface {
 	
 	// Bare repository operations
 	IsBareRepository() (bool, error)
-	UpdateRef(ref string, commit string, options ...Option) error
-	DeleteRef(ref string, options ...Option) error
-	ListRefs(options ...Option) ([]types.Reference, error)
 }
 
 // Command interface defines the contract for git command execution

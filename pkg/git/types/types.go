@@ -193,20 +193,3 @@ type CheckoutResult struct {
 	UpstreamBranch   string   // Upstream branch set for new branches
 }
 
-// ReferenceType represents the type of git reference
-type ReferenceType string
-
-const (
-	ReferenceTypeBranch ReferenceType = "branch"
-	ReferenceTypeTag    ReferenceType = "tag"
-	ReferenceTypeRemote ReferenceType = "remote"
-	ReferenceTypeNote   ReferenceType = "note"
-	ReferenceTypeOther  ReferenceType = "other"
-)
-
-// Reference represents a git reference
-type Reference struct {
-	Name   string        // Reference name (e.g., refs/heads/main)
-	Commit string        // Commit hash the reference points to
-	Type   ReferenceType // Reference type (tag, branch, etc.)
-}

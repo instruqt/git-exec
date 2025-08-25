@@ -406,35 +406,19 @@ if err != nil {
 }
 fmt.Printf("Repository is bare: %v\n", isBare)
 
-// Reference management in bare repositories
-refs, err := gitInstance.ListRefs()
-if err != nil {
-    log.Fatal(err)
-}
-
-for _, ref := range refs {
-    fmt.Printf("%s (%s) -> %s\n", ref.Name, ref.Type, ref.Commit)
-}
-
-// Create a new reference
-err = gitInstance.UpdateRef("refs/heads/feature", "abc123def")
-if err != nil {
-    log.Fatal(err)
-}
-
-// Delete a reference
-err = gitInstance.DeleteRef("refs/heads/old-branch")
-if err != nil {
-    log.Fatal(err)
-}
+// All standard operations work in bare repositories
+// (branches, tags, commits, etc. - just no working directory operations)
+branches, err := gitInstance.ListBranches()
+tags, err := gitInstance.ListTags()
+err = gitInstance.CreateBranch("feature")
+err = gitInstance.Tag("v1.0.0")
 ```
 
-Reference types are strongly typed:
-- `ReferenceTypeBranch` - Local branches (refs/heads/*)
-- `ReferenceTypeTag` - Tags (refs/tags/*)
-- `ReferenceTypeRemote` - Remote branches (refs/remotes/*)
-- `ReferenceTypeNote` - Notes (refs/notes/*)
-- `ReferenceTypeOther` - Other reference types
+Bare repositories are ideal for:
+- Git servers (GitHub, GitLab, etc.)
+- Centralized repositories
+- Deployment targets
+- Backup repositories
 
 ## Testing
 
