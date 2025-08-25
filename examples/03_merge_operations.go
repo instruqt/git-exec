@@ -67,7 +67,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,7 +88,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = gitInstance.Checkout(git.CheckoutWithBranch("conflicting"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("conflicting"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,7 +135,7 @@ line 3
 	}
 
 	// Switch to main and make different changes
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
 		log.Fatal(err)
 	}

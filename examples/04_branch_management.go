@@ -94,7 +94,7 @@ func main() {
 	}
 
 	// Work on feature branch
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature/auth"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature/auth"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func authenticate(user, pass string) bool {
 	}
 
 	// Work on database branch
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature/database"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature/database"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -152,7 +152,7 @@ func connect(dsn string) (*sql.DB, error) {
 	}
 
 	// Merge branches back to main
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
 		log.Fatal(err)
 	}

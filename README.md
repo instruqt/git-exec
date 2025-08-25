@@ -109,9 +109,12 @@ Sessions maintain user configuration across operations:
 ```go
 // Create session with user configuration
 session, err := git.NewSession("/path/to/project",
-    git.WithSessionUser("Alice Developer", "alice@company.com"),
-    git.WithMetadata("project", "web-app"),
-    git.WithMetadata("team", "frontend"),
+    git.SessionWithUser("Alice Developer", "alice@company.com"),
+    git.SessionWithMetadata("user", "id", "user-123"),
+    git.SessionWithMetadata("user", "role", "developer"), 
+    git.SessionWithMetadata("project", "name", "web-app"),
+    git.SessionWithMetadata("project", "version", "1.0.0"),
+    git.SessionWithMetadata("team", "name", "frontend"),
 )
 if err != nil {
     log.Fatal(err)
@@ -182,7 +185,7 @@ fmt.Printf("Previous HEAD: %s\n", result.PreviousHEAD)
 fmt.Printf("New HEAD: %s\n", result.NewHEAD)
 
 // Create and checkout new branch
-result, err = gitInstance.Checkout(git.CheckoutWithCreateBranch("new-feature"))
+result, err = gitInstance.Checkout(git.CheckoutWithCreate("new-feature"))
 if err != nil {
     log.Fatal(err)
 }
