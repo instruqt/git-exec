@@ -110,7 +110,10 @@ Sessions maintain user configuration across operations:
 // Create session with user configuration
 session, err := git.NewSession("/path/to/project",
     git.SessionWithUser("Alice Developer", "alice@company.com"),
+    git.SessionWithMetadata("user", "id", "user-123"),
+    git.SessionWithMetadata("user", "role", "developer"), 
     git.SessionWithMetadata("project", "name", "web-app"),
+    git.SessionWithMetadata("project", "version", "1.0.0"),
     git.SessionWithMetadata("team", "name", "frontend"),
 )
 if err != nil {
