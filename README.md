@@ -144,10 +144,11 @@ if err != nil {
     log.Fatal(err)
 }
 
-err = gitInstance.Checkout(git.CheckoutWithBranch("feature/auth"))
+result, err := gitInstance.Checkout(git.CheckoutWithBranch("feature/auth"))
 if err != nil {
     log.Fatal(err)
 }
+fmt.Printf("Switched to branch: %s\n", result.Branch)
 
 // List all branches
 branches, err := gitInstance.ListBranches()
@@ -161,6 +162,57 @@ for _, branch := range branches {
         marker = "*"
     }
     fmt.Printf("  %s %s\n", marker, branch.Name)
+}
+```
+
+### Enhanced Checkout Operations
+
+The checkout operation returns detailed information about the checkout result:
+
+```go
+// Checkout existing branch
+result, err := gitInstance.Checkout(git.CheckoutWithBranch("feature"))
+if err != nil {
+    log.Fatal(err)
+}
+
+fmt.Printf("Success: %v\n", result.Success)
+fmt.Printf("Branch: %s\n", result.Branch)
+fmt.Printf("Previous HEAD: %s\n", result.PreviousHEAD)
+fmt.Printf("New HEAD: %s\n", result.NewHEAD)
+
+// Create and checkout new branch
+result, err = gitInstance.Checkout(git.CheckoutWithCreateBranch("new-feature"))
+if err != nil {
+    log.Fatal(err)
+}
+
+if result.NewBranch {
+    fmt.Printf("Created new branch: %s\n", result.Branch)
+}
+
+// Checkout specific commit (detached HEAD)
+result, err = gitInstance.Checkout(git.CheckoutWithCommit("abc123"))
+if err != nil {
+    log.Fatal(err)
+}
+
+if result.DetachedHEAD {
+    fmt.Printf("Detached HEAD at commit: %s\n", result.Commit)
+}
+
+// Checkout with file modifications
+result, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+if err != nil {
+    log.Fatal(err)
+}
+
+if len(result.ModifiedFiles) > 0 {
+    fmt.Printf("Modified files: %v\n", result.ModifiedFiles)
+}
+
+if result.Warning != "" {
+    fmt.Printf("Warning: %s\n", result.Warning)
 }
 ```
 

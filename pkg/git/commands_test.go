@@ -357,7 +357,7 @@ func TestCheckoutCommand(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Checkout the branch
-	err = gitInstance.Checkout(git.CheckoutWithBranch("test-branch"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("test-branch"))
 	require.NoError(t, err)
 	
 	// Verify we're on the new branch
@@ -374,7 +374,7 @@ func TestCheckoutCommand(t *testing.T) {
 	assert.Equal(t, "test-branch", activeBranch)
 	
 	// Test checkout with create
-	err = gitInstance.Checkout(git.CheckoutWithCreate("new-branch"))
+	_, err = gitInstance.Checkout(git.CheckoutWithCreate("new-branch"))
 	require.NoError(t, err)
 	
 	// Verify the new branch exists and is active

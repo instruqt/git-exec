@@ -117,7 +117,7 @@ func TestBranchOperations(t *testing.T) {
 	assert.Len(t, branches, 2)
 	
 	// Checkout new branch
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature-test"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature-test"))
 	require.NoError(t, err)
 	
 	// Verify we're on the new branch
@@ -134,10 +134,10 @@ func TestBranchOperations(t *testing.T) {
 	assert.Equal(t, "feature-test", activeBranch)
 	
 	// Switch back to main
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
 		// Try master if main doesn't exist
-		err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
+		_, err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
 	}
 	require.NoError(t, err)
 	
@@ -172,7 +172,7 @@ func TestMergeConflictResolution(t *testing.T) {
 	// Create and switch to feature branch
 	err = gitInstance.CreateBranch("feature")
 	require.NoError(t, err)
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature"))
 	require.NoError(t, err)
 	
 	// Modify the same file differently
@@ -185,9 +185,9 @@ func TestMergeConflictResolution(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Switch back to main
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
-		err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
+		_, err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
 	}
 	require.NoError(t, err)
 	

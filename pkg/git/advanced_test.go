@@ -66,7 +66,7 @@ func TestRebaseCommand(t *testing.T) {
 	// Create and switch to feature branch
 	err = gitInstance.CreateBranch("feature-rebase")
 	require.NoError(t, err)
-	err = gitInstance.Checkout(git.CheckoutWithBranch("feature-rebase"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("feature-rebase"))
 	require.NoError(t, err)
 	
 	// Create commits on feature branch
@@ -216,7 +216,7 @@ func TestAdvancedBranchOperations(t *testing.T) {
 	// Test force delete (if branch has unmerged changes)
 	err = gitInstance.CreateBranch("force-delete-test")
 	require.NoError(t, err)
-	err = gitInstance.Checkout(git.CheckoutWithBranch("force-delete-test"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("force-delete-test"))
 	require.NoError(t, err)
 	
 	// Make a commit on the branch
@@ -229,9 +229,9 @@ func TestAdvancedBranchOperations(t *testing.T) {
 	require.NoError(t, err)
 	
 	// Switch back to main
-	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
+	_, err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
-		err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
+		_, err = gitInstance.Checkout(git.CheckoutWithBranch("master"))
 	}
 	require.NoError(t, err)
 	

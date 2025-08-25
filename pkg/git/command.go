@@ -476,6 +476,21 @@ func CheckoutWithForce() Option {
 	return WithArgs("--force")
 }
 
+// CheckoutWithCommit checks out the specified commit
+func CheckoutWithCommit(commit string) Option {
+	return WithArgs(commit)
+}
+
+// CheckoutWithCreateBranch creates and checks out a new branch (alias for CheckoutWithCreate)
+func CheckoutWithCreateBranch(branch string) Option {
+	return WithArgs("-b", branch)
+}
+
+// CheckoutWithOrphan creates an orphan branch
+func CheckoutWithOrphan(branch string) Option {
+	return WithArgs("--orphan", branch)
+}
+
 // Merge-specific options
 
 // MergeWithBranch specifies the branch to merge
@@ -532,3 +547,4 @@ func InitWithSharedRepo(permissions string) Option {
 	}
 	return WithArgs("--shared=" + permissions)
 }
+
