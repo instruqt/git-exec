@@ -1,0 +1,17 @@
+with-expecter: true
+outpkg: mocks
+packages:
+  github.com/instruqt/git-exec/pkg/git:
+    interfaces:
+      Git:
+        config:
+          dir: "pkg/git/mocks"
+          filename: "git.go"
+      Command:
+        config:
+          dir: "pkg/git/mocks"  
+          filename: "command.go"
+      Session:
+        config:
+          dir: "pkg/git/mocks"
+          filename: "session.go"

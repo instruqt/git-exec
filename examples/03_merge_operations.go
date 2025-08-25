@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/instruqt/git-exec/pkg/git/commands"
+	"github.com/instruqt/git-exec/pkg/git"
 	"github.com/instruqt/git-exec/pkg/git/types"
 )
 
@@ -22,24 +22,24 @@ func main() {
 	repoPath := filepath.Join(tempDir, "merge-repo")
 
 	// Initialize repository
-	git, err := commands.NewGit()
+	gitInstance, err := git.NewGit()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Init(repoPath)
+	err = gitInstance.Init(repoPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	git.SetWorkingDirectory(repoPath)
+	gitInstance.SetWorkingDirectory(repoPath)
 
 	// Configure user
-	err = git.Config("user.name", "Merge Example")
+	err = gitInstance.Config("user.name", "Merge Example")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = git.Config("user.email", "merge@example.com")
+	err = gitInstance.Config("user.email", "merge@example.com")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,23 +51,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"main.txt"})
+	err = gitInstance.Add([]string{"main.txt"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Initial commit")
+	err = gitInstance.Commit("Initial commit")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Successful merge example
-	err = git.CreateBranch("feature")
+	err = gitInstance.CreateBranch("feature")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Checkout(commands.CheckoutWithBranch("feature"))
+	err = gitInstance.Checkout(git.CheckoutWithBranch("feature"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,23 +78,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"feature.txt"})
+	err = gitInstance.Add([]string{"feature.txt"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Add feature file")
+	err = gitInstance.Commit("Add feature file")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Checkout(commands.CheckoutWithBranch("main"))
+	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Successful merge
-	result, err := git.Merge(commands.MergeWithBranch("feature"))
+	result, err := gitInstance.Merge(git.MergeWithBranch("feature"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -104,12 +104,12 @@ func main() {
 	}
 
 	// Conflicting merge example
-	err = git.CreateBranch("conflicting")
+	err = gitInstance.CreateBranch("conflicting")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Checkout(commands.CheckoutWithBranch("conflicting"))
+	err = gitInstance.Checkout(git.CheckoutWithBranch("conflicting"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -124,18 +124,18 @@ line 3
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"main.txt"})
+	err = gitInstance.Add([]string{"main.txt"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Conflicting changes")
+	err = gitInstance.Commit("Conflicting changes")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Switch to main and make different changes
-	err = git.Checkout(commands.CheckoutWithBranch("main"))
+	err = gitInstance.Checkout(git.CheckoutWithBranch("main"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -149,18 +149,18 @@ line 3
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"main.txt"})
+	err = gitInstance.Add([]string{"main.txt"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Main changes")
+	err = gitInstance.Commit("Main changes")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Attempt merge - this will create conflicts
-	conflictResult, err := git.Merge(commands.MergeWithBranch("conflicting"))
+	conflictResult, err := gitInstance.Merge(git.MergeWithBranch("conflicting"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -184,7 +184,7 @@ line 3
 			},
 		}
 
-		err = git.ResolveConflicts(resolutions)
+		err = gitInstance.ResolveConflicts(resolutions)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -192,7 +192,7 @@ line 3
 		fmt.Println("Conflicts resolved using 'ours' strategy")
 
 		// Continue the merge
-		err = git.MergeContinue()
+		err = gitInstance.MergeContinue()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -201,7 +201,7 @@ line 3
 	}
 
 	// Show final commit history
-	logs, err := git.Log(commands.LogWithMaxCount("5"))
+	logs, err := gitInstance.Log(git.LogWithMaxCount("5"))
 	if err == nil {
 		fmt.Println("\nCommit history:")
 		for i, logEntry := range logs {

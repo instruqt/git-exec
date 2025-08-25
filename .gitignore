@@ -11,6 +11,12 @@ coverage.html
 *.so
 *.dylib
 
+# Example binaries
+01_basic_operations
+02_session_management
+03_merge_operations
+04_branch_management
+
 # Test binary, built with `go test -c`
 *.test
 
