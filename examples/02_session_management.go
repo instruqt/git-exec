@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/instruqt/git-exec/pkg/git/commands"
+	"github.com/instruqt/git-exec/pkg/git"
 )
 
 func main() {
@@ -22,11 +22,11 @@ func main() {
 	// Create new session with user configuration
 	sessionPath := filepath.Join(tempDir, "project-session")
 
-	session, err := commands.NewSession(sessionPath,
-		commands.WithUser("Alice Developer", "alice@company.com"),
-		commands.WithInstruqtMetadata("user-123", "session-456", time.Now()),
-		commands.WithMetadata("project", "web-app"),
-		commands.WithMetadata("team", "frontend"),
+	session, err := git.NewSession(sessionPath,
+		git.WithSessionUser("Alice Developer", "alice@company.com"),
+		git.WithInstruqtMetadata("user-123", "session-456", time.Now()),
+		git.WithMetadata("project", "web-app"),
+		git.WithMetadata("team", "frontend"),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -52,7 +52,7 @@ func main() {
 	}
 
 	// Load existing session
-	loadedSession, err := commands.LoadSession(sessionPath)
+	loadedSession, err := git.LoadSession(sessionPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,7 +85,7 @@ func main() {
 	}
 
 	// Show commit history
-	logs, err := loadedSession.Log(commands.LogWithMaxCount("5"))
+	logs, err := loadedSession.Log(git.LogWithMaxCount("5"))
 	if err == nil {
 		fmt.Println("\nCommit history:")
 		for i, logEntry := range logs {

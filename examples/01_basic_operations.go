@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/instruqt/git-exec/pkg/git/commands"
+	"github.com/instruqt/git-exec/pkg/git"
 )
 
 func main() {
@@ -21,25 +21,25 @@ func main() {
 	repoPath := filepath.Join(tempDir, "my-repo")
 
 	// Create new Git instance
-	git, err := commands.NewGit()
+	gitInstance, err := git.NewGit()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Initialize repository
-	err = git.Init(repoPath)
+	err = gitInstance.Init(repoPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	git.SetWorkingDirectory(repoPath)
+	gitInstance.SetWorkingDirectory(repoPath)
 
 	// Configure user
-	err = git.Config("user.name", "Example User")
+	err = gitInstance.Config("user.name", "Example User")
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = git.Config("user.email", "user@example.com")
+	err = gitInstance.Config("user.email", "user@example.com")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,13 +51,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"README.md"})
+	err = gitInstance.Add([]string{"README.md"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Check status
-	files, err := git.Status()
+	files, err := gitInstance.Status()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func main() {
 	}
 
 	// Create initial commit
-	err = git.Commit("Initial commit with README")
+	err = gitInstance.Commit("Initial commit with README")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -88,18 +88,18 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = git.Add([]string{"main.go"})
+	err = gitInstance.Add([]string{"main.go"})
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = git.Commit("Add main.go")
+	err = gitInstance.Commit("Add main.go")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Show commit history
-	logs, err := git.Log(commands.LogWithMaxCount("3"))
+	logs, err := gitInstance.Log(git.LogWithMaxCount("3"))
 	if err != nil {
 		log.Fatal(err)
 	}
