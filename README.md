@@ -217,6 +217,21 @@ if len(result.ModifiedFiles) > 0 {
 if result.Warning != "" {
     fmt.Printf("Warning: %s\n", result.Warning)
 }
+
+// Checkout specific files from HEAD or a commit
+result, err = gitInstance.Checkout(git.CheckoutWithFiles([]string{"src/main.go", "README.md"}))
+if err != nil {
+    log.Fatal(err)
+}
+
+// Checkout files from a specific commit
+result, err = gitInstance.Checkout(
+    git.CheckoutWithCommit("abc123"),
+    git.CheckoutWithFiles([]string{"config.json"}),
+)
+if err != nil {
+    log.Fatal(err)
+}
 ```
 
 ### Merge Operations with Conflict Resolution

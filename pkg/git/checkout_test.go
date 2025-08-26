@@ -283,3 +283,59 @@ func TestCheckout_WithOrphanBranch(t *testing.T) {
 	require.Equal(t, "orphan-branch", result.Branch)
 	require.True(t, result.NewBranch)
 }
+
+func TestCheckout_WithFiles(t *testing.T) {
+	tempDir, err := os.MkdirTemp("", "git-checkout-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	gitInstance, err := git.NewGit()
+	require.NoError(t, err)
+
+	// Initialize repository
+	err = gitInstance.Init(tempDir)
+	require.NoError(t, err)
+
+	gitInstance.SetWorkingDirectory(tempDir)
+
+	// Configure user
+	err = gitInstance.SetConfig("user.name", "Test User")
+	require.NoError(t, err)
+	err = gitInstance.SetConfig("user.email", "test@example.com")
+	require.NoError(t, err)
+
+	// Create initial files and commit
+	file1 := filepath.Join(tempDir, "file1.txt")
+	file2 := filepath.Join(tempDir, "file2.txt")
+	err = os.WriteFile(file1, []byte("original content 1"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(file2, []byte("original content 2"), 0644)
+	require.NoError(t, err)
+
+	err = gitInstance.Add([]string{"file1.txt", "file2.txt"})
+	require.NoError(t, err)
+
+	err = gitInstance.Commit("Initial commit")
+	require.NoError(t, err)
+
+	// Modify files
+	err = os.WriteFile(file1, []byte("modified content 1"), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(file2, []byte("modified content 2"), 0644)
+	require.NoError(t, err)
+
+	// Checkout only file1 from HEAD (should restore file1, leave file2 modified)
+	result, err := gitInstance.Checkout(git.CheckoutWithFiles([]string{"file1.txt"}))
+	require.NoError(t, err)
+	require.True(t, result.Success)
+
+	// Verify file1 was restored
+	content1, err := os.ReadFile(file1)
+	require.NoError(t, err)
+	require.Equal(t, "original content 1", string(content1))
+
+	// Verify file2 remains modified
+	content2, err := os.ReadFile(file2)
+	require.NoError(t, err)
+	require.Equal(t, "modified content 2", string(content2))
+}
