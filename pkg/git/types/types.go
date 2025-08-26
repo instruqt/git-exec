@@ -192,3 +192,4 @@ type CheckoutResult struct {
 	Warning          string   // Any warning messages
 	UpstreamBranch   string   // Upstream branch set for new branches
 }
+

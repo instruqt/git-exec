@@ -48,6 +48,16 @@ This directory contains comprehensive examples demonstrating the git-exec librar
 
 **Key concepts**: Branch workflows, feature development, branch lifecycle management
 
+### 05_bare_repository.go
+**Bare Repository Operations**
+- Creating bare repositories with Init and Clone
+- Detecting bare vs non-bare repositories
+- Working with branches and tags in bare repos
+- Server-side Git operations without working directory
+- All standard Git operations in bare context
+
+**Key concepts**: Bare repositories, server-side operations, centralized workflows
+
 ## Running the Examples
 
 Each example is self-contained and can be run independently:
@@ -64,6 +74,9 @@ go run examples/03_merge_operations.go
 
 # Run branch management example
 go run examples/04_branch_management.go
+
+# Run bare repository example
+go run examples/05_bare_repository.go
 ```
 
 ## Prerequisites
