@@ -48,6 +48,9 @@ type Git interface {
 	ListConfig(options ...Option) ([]types.ConfigEntry, error)
 	UnsetConfig(key string, options ...Option) error
 	Remove(options ...Option) error
+	
+	// Bare repository operations
+	IsBareRepository() (bool, error)
 }
 
 // Command interface defines the contract for git command execution

@@ -553,6 +553,28 @@ func InitWithSharedRepo(permissions string) Option {
 	return WithArgs("--shared=" + permissions)
 }
 
+// Clone-specific options
+
+// CloneWithBare creates a bare clone of the repository
+func CloneWithBare() Option {
+	return WithArgs("--bare")
+}
+
+// CloneWithDepth creates a shallow clone with specified depth
+func CloneWithDepth(depth int) Option {
+	return WithArgs("--depth", fmt.Sprintf("%d", depth))
+}
+
+// CloneWithBranch clones only a specific branch
+func CloneWithBranch(branch string) Option {
+	return WithArgs("--branch", branch)
+}
+
+// CloneWithSingleBranch clones only a single branch
+func CloneWithSingleBranch() Option {
+	return WithArgs("--single-branch")
+}
+
 // Config-specific options
 
 // ConfigWithLocalScope operates on repository-specific config

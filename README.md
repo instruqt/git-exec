@@ -396,6 +396,45 @@ for _, config := range configs {
 }
 ```
 
+### Bare Repository Support
+
+The library provides full support for bare repositories, commonly used for server-side Git operations:
+
+```go
+// Create a bare repository
+err := gitInstance.Init("/path/to/repo.git", git.InitWithBare())
+if err != nil {
+    log.Fatal(err)
+}
+
+// Clone as bare repository
+err = gitInstance.Clone("https://github.com/user/repo.git", "local.git", 
+    git.CloneWithBare())
+if err != nil {
+    log.Fatal(err)
+}
+
+// Check if repository is bare
+isBare, err := gitInstance.IsBareRepository()
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Repository is bare: %v\n", isBare)
+
+// All standard operations work in bare repositories
+// (branches, tags, commits, etc. - just no working directory operations)
+branches, err := gitInstance.ListBranches()
+tags, err := gitInstance.ListTags()
+err = gitInstance.CreateBranch("feature")
+err = gitInstance.Tag("v1.0.0")
+```
+
+Bare repositories are ideal for:
+- Git servers (GitHub, GitLab, etc.)
+- Centralized repositories
+- Deployment targets
+- Backup repositories
+
 ## Testing
 
 Run tests:
