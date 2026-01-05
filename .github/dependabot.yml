@@ -1,0 +1,40 @@
+version: 2
+registries:
+  instruqt-github:
+    type: "git"
+    url: "https://github.com"
+    username: "x-access-token"
+    password: "${{secrets.DEPENDABOT_KEY}}"
+
+updates:
+  - package-ecosystem: "gomod"
+    registries:
+      - "instruqt-github"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "05:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 30
+    groups:
+      patch-updates:
+        update-types: ["patch"]
+      minor-updates:
+        update-types: ["minor"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "05:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 30
+    groups:
+      patch-updates:
+        update-types: ["patch"]
+      minor-updates:
+        update-types: ["minor"]
+
+
