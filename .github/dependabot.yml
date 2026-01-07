@@ -18,6 +18,12 @@ updates:
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 30
     groups:
+      patch-updates-security:
+        applies-to: "security-updates"
+        update-types: ["patch"]
+      minor-updates-security:
+        applies-to: "security-updates"
+        update-types: ["minor"]
       patch-updates:
         update-types: ["patch"]
       minor-updates:
@@ -32,6 +38,12 @@ updates:
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 30
     groups:
+      patch-updates-security:
+        applies-to: "security-updates"
+        update-types: ["patch"]
+      minor-updates-security:
+        applies-to: "security-updates"
+        update-types: ["minor"]
       patch-updates:
         update-types: ["patch"]
       minor-updates:
