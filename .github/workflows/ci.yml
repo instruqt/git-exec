@@ -1,0 +1,31 @@
+# This file is managed by Terraform.
+# Do not edit manually. Submit changes via an infrastructure PR.
+
+name: Go CI
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
+
+jobs:
+  go-validate:
+    name: Go Validate
+    uses: instruqt/shared-workflows/.github/workflows/go-validate.yaml@main
+    secrets:
+      gh-token: ${{ secrets.GITOPS_KEY }}
+
+  go-lint:
+    name: Go lint
+    uses: instruqt/shared-workflows/.github/workflows/go-lint-v2.yaml@main
+    with:
+      timeout: 20m0s
+    secrets:
+      gh-token: ${{ secrets.GITOPS_KEY }}
+
+
