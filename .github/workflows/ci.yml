@@ -27,5 +27,3 @@ jobs:
       timeout: 20m0s
     secrets:
       gh-token: ${{ secrets.GITOPS_KEY }}
-
-
