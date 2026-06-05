@@ -24,10 +24,25 @@ updates:
       minor-updates-security:
         applies-to: "security-updates"
         update-types: ["minor"]
+      # All OTel packages must move together — mixing SDK and exporter versions
+      # that embed different semconv schema URLs breaks startup with
+      # "conflicting Schema URL" errors. This applies to both go.opentelemetry.io
+      # and go.opentelemetry.io/contrib packages.
+      opentelemetry:
+        patterns:
+          - "go.opentelemetry.io/*"
+          - "go.opentelemetry.io/contrib/*"
+        update-types: ["minor", "patch"]
       patch-updates:
         update-types: ["patch"]
+        exclude-patterns:
+          - "go.opentelemetry.io/*"
+          - "go.opentelemetry.io/contrib/*"
       minor-updates:
         update-types: ["minor"]
+        exclude-patterns:
+          - "go.opentelemetry.io/*"
+          - "go.opentelemetry.io/contrib/*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
