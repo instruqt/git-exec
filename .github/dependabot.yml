@@ -17,6 +17,12 @@ updates:
       time: "05:00"
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 30
+    # Keep the release cooldown for third-party modules, but pick up our own
+    # releases immediately.
+    cooldown:
+      default-days: 3
+      exclude:
+        - "go.instruqt.com/*"
     groups:
       patch-updates-security:
         applies-to: "security-updates"
