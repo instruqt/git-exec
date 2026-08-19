@@ -69,5 +69,3 @@ updates:
         update-types: ["patch"]
       minor-updates:
         update-types: ["minor"]
-
-
