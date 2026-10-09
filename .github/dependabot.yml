@@ -5,11 +5,17 @@ registries:
     url: "https://github.com"
     username: "x-access-token"
     password: "${{secrets.DEPENDABOT_KEY}}"
+  instruqt-go-vanity:
+    type: "git"
+    url: "https://go.instruqt.com"
+    username: "x-access-token"
+    password: "${{secrets.DEPENDABOT_KEY}}"
 
 updates:
   - package-ecosystem: "gomod"
     registries:
       - "instruqt-github"
+      - "instruqt-go-vanity"
     directory: "/"
     schedule:
       interval: "weekly"
