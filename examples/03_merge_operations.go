@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates merge operations and conflict resolution
 package main
 

@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates branch operations and management
 package main
 

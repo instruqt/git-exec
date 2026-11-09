@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates bare repository operations and reference management
 package main
 

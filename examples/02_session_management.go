@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates session management with persistent user context
 package main
 

@@ -1,3 +1,5 @@
+//go:build ignore
+
 // Package main demonstrates basic Git operations using git-exec
 package main
 
